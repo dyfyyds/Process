@@ -6,6 +6,8 @@
 #include <QListWidgetItem>
 #include "TitleItem.h"
 #include "NodeItem.h"
+#include "ScheDuler.h"
+#include "ListSorter.h"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -14,7 +16,9 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    this->m_scheduler = std::make_shared<Scheduler>();
     GuiInit();
+
 }
 
 MainWindow::~MainWindow()
@@ -82,6 +86,10 @@ void MainWindow::on_AddProcessButton_clicked()
 
         ui->ReadyQueue->addItem(item);
         ui->ReadyQueue->setItemWidget(item,node);
+
+        //插入调度器的链表队列
+        ListSorter::insertByPriority(m_scheduler->getList(),
+                                      new Process(name.toStdString(),priority.toInt(),ntime.toInt()));
 
         //删除组件
         add->deleteLater();

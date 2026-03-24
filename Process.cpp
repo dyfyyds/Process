@@ -1,7 +1,10 @@
 #include "Process.h"
 
+#include <qDebug>
+
 Process::Process(const std::string& name,int priority,int ntime):
     m_name(name),m_state('W'),m_priority(priority),m_ntime(ntime),m_rtime(0){}
+
 
 Process::Process(): m_name(""), m_state('W'), m_priority(0), m_ntime(0), m_rtime(0) {}
 

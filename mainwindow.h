@@ -1,7 +1,10 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "ScheDuler.h"
+
 #include <QMainWindow>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -25,6 +28,7 @@ private:
 
 private:
     Ui::MainWindow *ui;
+    std::shared_ptr<Scheduler> m_scheduler;
 
 };
 #endif // MAINWINDOW_H

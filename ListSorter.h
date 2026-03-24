@@ -3,6 +3,7 @@
 
 #include "List.h"
 #include "Process.h"
+#include <QDebug>
 
 class ListSorter{
 public:
