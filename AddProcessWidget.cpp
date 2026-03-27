@@ -14,6 +14,9 @@ AddProcessWidget::AddProcessWidget(QWidget *parent)
     ui->Ntime->setValidator(timeValidator);
     ui->Priority->setValidator(timeValidator);
 
+    //输入框回车会自动关联取消，取消属性或者过滤这个事件
+    ui->CancleButton->setAutoDefault(false);
+
 
     //禁用
     ui->ComfireButton->setEnabled(false);
@@ -23,6 +26,8 @@ AddProcessWidget::AddProcessWidget(QWidget *parent)
 
     connect(ui->ComfireButton,&QPushButton::clicked,this,[this](){emit this->accepted();});
     connect(ui->CancleButton,&QPushButton::clicked,this,[this](){emit this->rejected();});
+
+    connect(ui->Name,&QLineEdit::textChanged,this,[this](){emit check(this);});
 }
 
 AddProcessWidget::~AddProcessWidget()
@@ -52,3 +57,19 @@ QString AddProcessWidget::getRunTime() const
 {
     return ui->Ntime->text();
 }
+
+void AddProcessWidget::setName(QString name)
+{
+    ui->Name->setText(name);
+}
+
+void AddProcessWidget::setNameStyle(QString style)
+{
+    ui->Name->setStyleSheet(style);
+}
+
+QString AddProcessWidget::getNameStyle()
+{
+    return ui->Name->styleSheet();
+}
+

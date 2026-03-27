@@ -23,11 +23,18 @@ signals:
     void accepted();
     void rejected();
 
+    void check(QWidget* w);
+
+
 
 public:
     QString getName() const;
     QString getPriority() const;
     QString getRunTime() const;
+    void setName(QString name);
+
+    void setNameStyle(QString style);
+    QString getNameStyle();
 
 private:
     Ui::AddProcessWidget *ui;

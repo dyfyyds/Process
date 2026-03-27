@@ -2,5 +2,7 @@
     <qresource prefix="/">
         <file>icon/process.png</file>
         <file>icon/delete.png</file>
+        <file>icon/close.png</file>
+        <file>icon/mini.png</file>
     </qresource>
 </RCC>

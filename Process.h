@@ -25,6 +25,7 @@ public:
      * @param ntime     需要运行的时间
      */
     Process(const std::string& name,int priority,int ntime);
+    Process(const std::string& name,int priority,int rtime, int ntime);
     Process();
 
     /**

@@ -15,7 +15,14 @@ public:
     explicit NodeItem(QWidget *parent = nullptr);
     ~NodeItem();
 
-    void setValue(const QString& name, const QString& priority, const QString& runtime);
+    void setValue(const QString& name, const QString& priority, const QString& ntime);
+    void setValue(const QString& name, const QString& priority, const QString& rtime, const QString& ntime);
+
+    QString getName();
+
+signals:
+    void deleteClicked(QWidget* w);
+    void check(QWidget* w);
 
 private:
     Ui::NodeItem *ui;

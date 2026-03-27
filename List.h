@@ -1,6 +1,9 @@
 #ifndef LIST_H
 #define LIST_H
 
+#include <iostream>
+#include <qDebug>
+
 /**
  * @brief 手写一个链表,c++有高度封装的list的库可以直接使用
  *
@@ -66,7 +69,7 @@ public:
      * @return int
      */
     int size(){
-        return this->m_size();
+        return this->m_size;
     }
 
     /**
@@ -133,13 +136,15 @@ public:
      * @details 排序后重新加入链表
      */
     void setHead(Node* node){
+
+        clear();
         this->m_head = node;
 
         Node* cur = m_head;
         int count = 0;
         while(cur){
             count++;
-            node = node->next;
+            cur = cur->next;
         }
 
         this->m_size = count;

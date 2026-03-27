@@ -17,7 +17,6 @@ Scheduler::~Scheduler(){
 
 
 List<Process*>& Scheduler::getList(){
-    qDebug() << __LINE__;
     return this->m_process;
 }
 
@@ -35,11 +34,5 @@ Process *Scheduler::stepRun()
         font->execute();
         font->updateState();
     }
-
-    //如果没结束，重新按优先级插回队列
-    if (!font->isFinish()) {
-        ListSorter::insertByPriority(m_process, font);
-    }
-
     return font;
 }
