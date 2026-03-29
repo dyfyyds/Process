@@ -2,7 +2,6 @@
 #define LIST_H
 
 #include <iostream>
-#include <qDebug>
 
 /**
  * @brief 手写一个链表,c++有高度封装的list的库可以直接使用
@@ -32,68 +31,36 @@ private:
             this->m_head = this->m_head->next;
             delete temp;
         }
-        //节点数量设为0
         this->m_size = 0;
     }
 
 public:
-    /**
-     * @brief 构造函数
-     *
-     * @note 传进来可能是一个空指针
-     */
     List(Node* head):m_head(head),m_size(head ? 1 : 0){}
     List():m_head(nullptr),m_size(0){}
 
-    /**
-     * @brief 析构函数
-     *
-     */
     ~List(){
         clear();
     }
 
-    /**
-     * @brief 判断链表是否为空
-     *
-     * @return true
-     * @return false
-     */
-    bool empty(){
+    bool empty() const{
         return this->m_head == nullptr;
     }
 
-    /**
-     * @brief 返回链表的节点数量
-     *
-     * @return int
-     */
-    int size(){
+    int size() const{
         return this->m_size;
     }
 
-    /**
-     * @brief 返回头结点数据
-     *
-     * @return 链表节点数据通用类型
-     */
     T front(){
         if(this->m_head)  return this->m_head->data;
         return nullptr;
     }
 
-    /**
-     * @brief 返回头结点
-     *
-     */
     Node* getHead() const{
         return this->m_head;
     }
 
     /**
      * @brief 头部插入数据
-     *
-     * @param data 待插入的数据
      */
     void push_front(T data){
         Node* newData = new Node(data);
@@ -103,10 +70,23 @@ public:
     }
 
     /**
+     * @brief 尾部插入数据
+     */
+    void push_back(T data){
+        Node* newData = new Node(data);
+        if(!this->m_head){
+            this->m_head = newData;
+        } else {
+            Node* cur = this->m_head;
+            while(cur->next)
+                cur = cur->next;
+            cur->next = newData;
+        }
+        this->m_size++;
+    }
+
+    /**
      * @brief 在任意节点后插入数据
-     *
-     * @param preNode
-     * @param data
      */
     void insert(Node* preNode,T data){
         Node* newData = new Node(data);
@@ -119,7 +99,6 @@ public:
 
     /**
      * @brief 移除头结点
-     *
      */
     void pop_front(){
         if (this->m_head){

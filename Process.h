@@ -1,79 +1,63 @@
 #ifndef PROCESS_H
 #define PROCESS_H
 
-
 #include <string>
+#include <QColor>
 
-/**
- * @brief 负责管理一个进程的行为
- *
- */
 class Process{
 private:
-    std::string m_name;         //进程名
-    char        m_state;        //状态 W  R  F (就绪，运行，完成)
-    int         m_priority;     //优先级
-    int         m_ntime;        //需要的总时间
-    int         m_rtime;        //已经运行的时间
+    std::string m_name;
+    char        m_state;        // W(就绪) R(运行) F(完成)
+    int         m_priority;
+    int         m_ntime;        // 需要的总时间
+    int         m_rtime;        // 已经运行的时间
+
+    int         m_originalPriority;
+    int         m_arrivalTime;
+    int         m_waitTime;
+    int         m_startTime;    // 首次运行时的tick (-1未运行)
+    int         m_finishTime;
+    QColor      m_color;
 
 public:
-    /**
-     * @brief 构造函数
-     *
-     * @param name      进程名
-     * @param priority  优先级
-     * @param ntime     需要运行的时间
-     */
-    Process(const std::string& name,int priority,int ntime);
-    Process(const std::string& name,int priority,int rtime, int ntime);
+    Process(const std::string& name, int priority, int ntime);
+    Process(const std::string& name, int priority, int rtime, int ntime);
     Process();
+    ~Process() = default;
 
-    /**
-     * @brief 默认析构函数
-     *
-     */
-    ~Process()=default;
-
-    /**
-     * @brief   调整到运行状态
-     *
-     * @details 判断是否满足条件(处于就绪态且运行时间没有超出总时间)
-     *
-     * @return true
-     * @return false
-     */
     bool setRunning();
-
-    /**
-     * @brief 判断进程是否运行完成
-     *
-     * @return true
-     * @return false
-     */
-    bool isFinish();
-
-    /**
-     * @brief 执行一次进程
-     * @details 运行一次，时间+1，优先级-1
-     */
+    bool isFinish() const;
     void execute();
-
-    /**
-     * @brief 更新状态
-     *
-     */
     void updateState();
 
-    /**
-     * @brief 对外接口
-     *
-     */
+    // 优先级调度专用
+    void decreasePriority();
+
+    // 统计
+    void incrementWaitTime();
+    void setArrivalTime(int tick);
+    void setStartTime(int tick);
+    void setFinishTime(int tick);
+    void setColor(const QColor& color);
+
+    // 克隆(用于算法对比)
+    Process* clone() const;
+
+    // Getters
     int getPriority() const;
+    int getOriginalPriority() const;
     std::string getName() const;
     int getNTime() const;
     int getRTime() const;
+    int getRemainingTime() const;
     char getState() const;
+    int getArrivalTime() const;
+    int getWaitTime() const;
+    int getStartTime() const;
+    int getFinishTime() const;
+    int getTurnaroundTime() const;
+    int getResponseTime() const;
+    QColor getColor() const;
 };
-
 
 #endif // PROCESS_H

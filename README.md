@@ -1,15 +1,24 @@
-# Process 
+# Process - 进程调度仿真系统
 
 ## 项目简介
 
-这是一个基于 Qt 开发的进程调度算法可视化模拟器，用于演示和理解操作系统中的进程调度机制。项目使用 C++17 和 Qt 框架实现，提供了图形化界面来展示进程的生命周期和调度过程。
+这是一个基于 Qt 开发的**赛博朋克风格**进程调度算法可视化模拟器，用于演示和理解操作系统中的进程调度机制。项目使用 C++17 和 Qt 框架实现，提供了炫酷的图形化界面来展示进程的生命周期和调度过程。
+
+### ✨ 赛博朋克 UI 重构
+
+- 🎨 **全息投影效果**：进程卡片带有扫描线和脉冲发光边框
+- ⚡ **CPU 核心可视化**：粒子效果、能量环和能量流动动画
+- 🌊 **霓虹轨迹甘特图**：多层发光效果，横向扫描线动画
+- ⌨️ **终端打字机效果**：解释栏文字逐字显示，代码风格字体
+- 🎯 **触摸屏风格控制面板**：全息按钮，科技感图标
+- 📊 **动态统计面板**：渐变分隔线，数据可视化展示
 
 ## 技术栈
 
 - **编程语言**: C++17
 - **框架**: Qt (支持 Qt5 和 Qt6)
 - **构建系统**: CMake (最低版本 3.16)
-- **UI 设计**: Qt Designer (.ui 文件)
+- **UI 设计**: 纯代码实现，赛博朋克风格样式表
 
 ## 项目结构
 
@@ -23,105 +32,162 @@ Process/
 ├── .qrc                       # Qt 资源配置文件
 ├── CMakeLists.txt             # CMake 构建配置
 ├── main.cpp                   # 程序入口
-├── mainwindow.h/.cpp/.ui      # 主窗口
+├── mainwindow.h/.cpp          # 主窗口（赛博朋克风格标题栏）
 ├── List.h                     # 模板链表实现
 ├── Process.h/.cpp             # 进程类定义
 ├── ScheDuler.h/.cpp           # 调度器实现
 ├── ListSorter.h               # 链表排序工具
-├── NodeItem.h/.cpp/.ui        # 进程列表项组件
-├── TitleItem.h/.cpp/.ui       # 标题栏组件
-└── AddProcessWidget.h/.cpp/.ui # 添加进程对话框
+├── ColorGenerator.h           # 颜色生成器
+├── CyberStyle.h               # 赛博朋克样式定义 ⭐ 
+├── ProcessCard.h/.cpp         # 进程卡片（全息投影效果） ⭐ 
+├── CpuWidget.h/.cpp           # CPU 执行单元（粒子动画） ⭐ 
+├── GanttWidget.h/.cpp         # 甘特图（霓虹轨迹） ⭐ 
+├── ReadyQueueWidget.h/.cpp    # 就绪队列显示 ⭐ 
+├── ControlPanel.h/.cpp        # 控制面板（触摸屏风格） ⭐ 
+├── StatsPanel.h/.cpp          # 统计面板 ⭐ 
+├── ExplanationBar.h/.cpp      # 解释栏（终端打字机） ⭐ 
+├── ComparisonDialog.h/.cpp    # 算法对比对话框 ⭐ 
+├── SchedulingStrategy.h       # 调度策略接口
+├── FCFSStrategy.h             # 先来先服务策略
+├── SJFStrategy.h              # 短作业优先策略
+├── PriorityStrategy.h         # 优先级调度策略
+├── RoundRobinStrategy.h       # 时间片轮转策略
+└── MLFQStrategy.h             # 多级反馈队列策略
 ```
 
 ## 核心模块
 
 ### 1. 进程管理 (Process)
 
-[Process](file://d:\qtcode\Process\Process.h#L10-L75) 类负责模拟操作系统中的进程实体，包含以下属性：
+`Process` 类负责模拟操作系统中的进程实体，包含以下属性：
 
 - **进程名** (`m_name`): 进程的唯一标识符
 - **状态** (`m_state`): W(就绪)、R(运行)、F(完成)
 - **优先级** (`m_priority`): 数值越大优先级越高
 - **总时间** (`m_ntime`): 进程需要的总运行时间
 - **已运行时间** (`m_rtime`): 进程已经执行的时间
+- **颜色** (`m_color`): 进程在 UI 中的显示颜色
 
 主要方法：
 
 - `setRunning()`: 将进程设置为运行状态
-- `execute()`: 执行一次进程 (运行时间 +1，优先级 -1)
+- `execute()`: 执行一次进程
 - `isFinish()`: 判断进程是否完成
 - `updateState()`: 更新进程状态
+- `clone()`: 克隆进程（用于算法对比）
 
 ### 2. 调度器 (Scheduler)
 
-[Scheduler](file://d:\qtcode\Process\ScheDuler.h#L8-L27) 类是进程调度的核心，负责管理进程队列和执行调度逻辑：
+`Scheduler` 类是进程调度的核心，负责管理进程队列和执行调度逻辑：
 
-- **进程链表** (`m_process`): 存储所有待调度的进程
-- **调度次数** (`m_count`): 记录调度执行的次数
+- **策略模式**: 支持多种调度算法的动态切换
+- **就绪队列**: 管理待调度的进程
+- **甘特图数据**: 记录执行历史用于可视化
+- **统计信息**: 计算平均等待时间、周转时间等
 
-主要方法：
-
-- `stepRun()`: 单步执行调度
-- `getList()`: 获取进程链表
+支持的调度算法：
+- **FCFS**: 先来先服务
+- **SJF**: 短作业优先
+- **Priority**: 优先级调度
+- **Round Robin**: 时间片轮转
+- **MLFQ**: 多级反馈队列
 
 ### 3. 数据结构 (List)
 
-[List](file://d:\qtcode\Process\List.h#L12-L153) 是一个模板链表类，提供了基础的链表操作：
+`List` 是一个模板链表类，提供了基础的链表操作：
 
 - 支持任意类型的模板参数
-- 头插法插入节点
+- 头插法/尾插法插入节点
 - 任意位置插入节点
 - 删除头结点
 - 清空链表
 - 获取链表大小和头结点
 
-### 4. 链表排序器 (ListSorter)
+### 4. 调度策略 (SchedulingStrategy)
 
-[ListSorter](file://d:\qtcode\Process\ListSorter.h#L7-L49) 提供静态方法用于按优先级插入进程：
+采用策略模式实现多种调度算法：
 
-- `insertByPriority()`: 根据优先级将进程插入到链表的合适位置
-- 返回插入位置的索引
+- `selectNext()`: 从就绪队列选择下一个进程
+- `reinsert()`: 将进程重新插入就绪队列
+- `insertNew()`: 插入新进程
+- `getTimeSlice()`: 获取时间片大小
+- `displayName()`: 获取策略名称
+- `explainStep()`: 生成调度步骤解释
 
-### 5. 用户界面组件
+### 5. 赛博朋克 UI 组件 ⭐ NEW
 
 #### MainWindow (主窗口)
+- 渐变背景标题栏，发光标题（⚡ 进程调度仿真系统）
+- 透明背景，圆角边框
+- 自定义最小化/关闭按钮（悬停发光效果）
 
-- 显示进程列表表格
-- 提供调度控制按钮 (单步执行、自动执行、重置、关闭、最小化)
-- 支持窗口拖拽移动
-- 管理进程添加和删除
+#### ProcessCard (进程卡片)
+- **全息投影效果**: 多层发光边框
+- **扫描线动画**: 从上到下持续扫描
+- **脉冲发光**: 边框亮度周期性变化
+- **左侧能量条**: 渐变色标识
+- **背景网格**: 科技感装饰
+- **进度条**: 渐变色彩显示执行进度
 
-#### NodeItem (进程项)
+#### CpuWidget (CPU 执行单元)
+- **粒子系统**: 20 个浮动粒子动画
+- **能量环**: 3 层旋转光环
+- **能量流动**: 水平扫描光带
+- **多层边框**: 4 层渐变发光
+- **实时状态**: 显示当前执行进程信息
 
-- 显示单个进程的信息
-- 提供删除按钮
-- 显示进程名、优先级、运行时间等信息
+#### GanttWidget (甘特图)
+- **霓虹轨迹**: 多层发光效果
+- **扫描线动画**: 横向移动扫描
+- **渐变背景**: 深度感背景
+- **网格线**: 虚线时间刻度
+- **发光光标**: 当前时刻标记
 
-#### AddProcessWidget (添加进程对话框)
+#### ControlPanel (控制面板)
+- **全息按钮**: 渐变背景，悬停发光
+- **科技图标**: ⏱📊⭐🔄🎯🎲▶↻⚖
+- **渐变分隔线**: 科技感装饰
+- **滑动条**: 自定义样式
 
-- 输入进程信息 (名称、优先级、运行时间)
-- 输入验证
-- 发送确认/取消信号
+#### ExplanationBar (解释栏)
+- **打字机效果**: 文字逐字显示
+- **代码字体**: Consolas 等宽字体
+- **终端风格**: 代码注释样式（//）
 
-#### TitleItem (标题项)
-
-- 自定义标题栏组件
+#### StatsPanel (统计面板)
+- **性能指标**: 平均等待/周转/响应时间
+- **CPU 利用率**: 进度条可视化
+- **完成列表**: 表格展示已完成进程
+- **图标装饰**: 📊⚡✅
 
 ## 功能特性
 
 1. **进程管理**
-   - 添加新进程
+   - 添加新进程（手动/随机生成）
    - 删除进程
-   - 显示进程详细信息
+   - 显示进程详细信息（颜色标识）
+
 2. **调度控制**
    - 单步执行：一次调度一个进程
    - 自动执行：连续执行调度过程
    - 重置：恢复初始状态
+   - 算法对比：对比 5 种调度算法性能
+
 3. **可视化展示**
-   - 进程状态实时显示
-   - 优先级动态变化
-   - 运行进度跟踪
-4. **自定义窗口**
+   - CPU 执行单元动画
+   - 就绪队列实时显示
+   - 甘特图动态更新
+   - 统计面板实时更新
+   - 调度步骤文字解释
+
+4. **赛博朋克 UI**
+   - 全息投影效果
+   - 粒子动画
+   - 霓虹发光
+   - 扫描线效果
+   - 渐变背景
+
+5. **自定义窗口**
    - 无边框窗口设计
    - 支持拖拽移动
    - 自定义最小化/关闭按钮
@@ -145,10 +211,11 @@ cd build
 cmake ..
 
 # 构建
-cmake --build .
+cmake --build . --config Release
 
-# 安装 (可选)
-cmake --install .
+# 运行
+./Release/Process.exe  # Windows
+./Process              # Linux/macOS
 ```
 
 ### Qt 版本配置
@@ -161,51 +228,92 @@ cmake --install .
 ## 使用说明
 
 1. **启动程序**: 运行编译后的可执行文件
-2. **添加进程**: 点击"添加进程"按钮，输入进程信息
-3. **开始调度**:
-   - 点击"单步执行"按钮逐步查看调度过程
-   - 或点击"自动执行"按钮自动运行
-4. **查看状态**: 在表格中查看各进程的状态变化
-5. **重置**: 点击"重置"按钮重新开始
+2. **添加进程**: 
+   - 手动输入进程名称、优先级、运行时间
+   - 或点击"🎲 随机"按钮自动生成
+3. **选择算法**: 从下拉菜单选择调度算法
+4. **开始调度**:
+   - 点击"⏭ 单步"按钮逐步查看调度过程
+   - 或点击"▶ 自动"按钮自动运行
+5. **查看状态**: 
+   - CPU 执行单元显示当前运行进程
+   - 就绪队列显示等待进程
+   - 甘特图展示执行历史
+   - 统计面板显示性能指标
+6. **算法对比**: 点击"⚖ 对比"按钮比较不同算法性能
+7. **重置**: 点击"↻ 重置"按钮重新开始
 
 ## 设计亮点
 
-1. **手写链表**: 为了教学目的，手动实现了模板链表而非使用 STL
-2. **优先级调度**: 实现了基于优先级的进程调度算法
-3. **动态优先级**: 进程执行后优先级会降低，避免饥饿现象
-4. **模块化设计**: UI 与业务逻辑分离，易于维护和扩展
-5. **跨平台**: 支持 Windows、Linux、macOS
+### 赛博朋克视觉设计
+1. **多层发光效果**: 使用多层边框和透明度模拟霓虹灯
+2. **粒子系统**: CPU widget 中的浮动粒子动画
+3. **扫描线效果**: ProcessCard 和 GanttWidget 的扫描动画
+4. **渐变色彩**: 按钮、进度条、背景的渐变设计
+5. **科技图标**: Unicode 图标增强视觉效果
+
+### 技术实现
+1. **手写链表**: 为了教学目的，手动实现了模板链表
+2. **策略模式**: 灵活的调度算法切换
+3. **属性动画**: QPropertyAnimation 实现流畅动画
+4. **自定义绘制**: QPainter 实现复杂图形效果
+5. **模块化设计**: UI 与业务逻辑分离
+
+### 性能优化
+1. **按需重绘**: 只在必要时更新 UI
+2. **对象池**: 复用动画对象
+3. **智能指针**: 使用 std::unique_ptr 管理策略对象
+
+## 截图展示
+
+### 主界面
+- 深色渐变背景
+- 霓虹色彩方案
+- 全息投影进程卡片
+- 粒子动画 CPU 单元
+
+### 动画效果
+- 扫描线动画
+- 边框脉冲发光
+- 能量环旋转
+- 打字机文字显示
 
 ## 文件说明
 
-### 头文件
+### 核心头文件
 
-- [List.h](file://d:\qtcode\Process\List.h): 模板链表实现
-- [Process.h](file://d:\qtcode\Process\Process.h): 进程类定义
-- [ScheDuler.h](file://d:\qtcode\Process\ScheDuler.h): 调度器定义
-- [ListSorter.h](file://d:\qtcode\Process\ListSorter.h): 排序工具类
-- [mainwindow.h](file://d:\qtcode\Process\mainwindow.h): 主窗口类
-- [NodeItem.h](file://d:\qtcode\Process\NodeItem.h): 进程项组件
-- [TitleItem.h](file://d:\qtcode\Process\TitleItem.h): 标题组件
-- [AddProcessWidget.h](file://d:\qtcode\Process\AddProcessWidget.h): 添加进程对话框
+- `List.h`: 模板链表实现
+- `Process.h`: 进程类定义
+- `ScheDuler.h`: 调度器定义
+- `SchedulingStrategy.h`: 调度策略接口
+- `CyberStyle.h`: 赛博朋克样式定义 ⭐
+- `ProcessCard.h`: 进程卡片组件 ⭐
+- `CpuWidget.h`: CPU 执行单元 ⭐
+- `GanttWidget.h`: 甘特图组件 ⭐
 
-### 实现文件
+### 核心实现文件
 
-- [main.cpp](file://d:\qtcode\Process\main.cpp): 程序入口
-- [Process.cpp](file://d:\qtcode\Process\Process.cpp): 进程类实现
-- [ScheDuler.cpp](file://d:\qtcode\Process\ScheDuler.cpp): 调度器实现
-- [mainwindow.cpp](file://d:\qtcode\Process\mainwindow.cpp): 主窗口实现
-- [NodeItem.cpp](file://d:\qtcode\Process\NodeItem.cpp): 进程项实现
-- [TitleItem.cpp](file://d:\qtcode\Process\TitleItem.cpp): 标题实现
-- [AddProcessWidget.cpp](file://d:\qtcode\Process\AddProcessWidget.cpp): 添加对话框实现
+- `main.cpp`: 程序入口
+- `mainwindow.cpp`: 主窗口实现
+- `Process.cpp`: 进程类实现
+- `ScheDuler.cpp`: 调度器实现
+- `ProcessCard.cpp`: 进程卡片实现 ⭐
+- `CpuWidget.cpp`: CPU 单元实现 ⭐
+- `GanttWidget.cpp`: 甘特图实现 ⭐
 
-### UI 文件
+### 调度策略
 
-- [mainwindow.ui](file://d:\qtcode\Process\mainwindow.ui): 主窗口界面
-- [NodeItem.ui](file://d:\qtcode\Process\NodeItem.ui): 进程项界面
-- [TitleItem.ui](file://d:\qtcode\Process\TitleItem.ui): 标题界面
-- [AddProcessWidget.ui](file://d:\qtcode\Process\AddProcessWidget.ui): 添加对话框界面
+- `FCFSStrategy.h`: 先来先服务
+- `SJFStrategy.h`: 短作业优先
+- `PriorityStrategy.h`: 优先级调度
+- `RoundRobinStrategy.h`: 时间片轮转
+- `MLFQStrategy.h`: 多级反馈队列
+
 
 ## 许可证
 
 本项目为教学演示项目。
+
+## 致谢
+
+感谢使用本项目！如有问题或建议，欢迎反馈。

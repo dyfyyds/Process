@@ -1,67 +1,61 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "AddProcessWidget.h"
-#include "ScheDuler.h"
-
 #include <QMainWindow>
 #include <QTimer>
-#include <memory>
 #include <QMouseEvent>
+#include <QSet>
+#include <memory>
 
-QT_BEGIN_NAMESPACE
-namespace Ui {
-class MainWindow;
-}
-QT_END_NAMESPACE
+#include "ScheDuler.h"
+#include "ControlPanel.h"
+#include "CpuWidget.h"
+#include "ReadyQueueWidget.h"
+#include "GanttWidget.h"
+#include "StatsPanel.h"
+#include "ExplanationBar.h"
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
-private slots:
-    void on_AddProcessButton_clicked();
-
-    void on_SetSingleButton_clicked();
-
-    void on_SetAutoButton_clicked();
-
-    void on_RestButton_clicked();
-
-    void on_CloseButton_clicked();
-
-    void on_MiniButton_clicked();
-
 protected:
-    void mousePressEvent(QMouseEvent*);
-    void mouseMoveEvent(QMouseEvent*);
-    void mouseReleaseEvent(QMouseEvent*);
+    void mousePressEvent(QMouseEvent*) override;
+    void mouseMoveEvent(QMouseEvent*) override;
+    void mouseReleaseEvent(QMouseEvent*) override;
 
 private:
-    void GuiInit();
-    void AddTableValue(QString);
-    bool containsDuplicateNames(QString name);
+    void setupUI();
+    void connectSignals();
+    void onAddProcess();
+    void onRandomGenerate();
+    void onSingleStep();
+    void onAutoRun();
+    void onReset();
+    void onCompare();
+    void onAlgorithmChanged(Algorithm algo);
+    void onSpeedChanged(int ms);
+    void refreshUI();
+    void executeStep();
 
-signals:
-    void isExecute(bool);
-
-private:
-    Ui::MainWindow *ui;
     std::shared_ptr<Scheduler> m_scheduler;
-    QTimer *m_timer;
+    QTimer* m_timer;
+    bool m_autoRunning = false;
+    bool m_isDrag = false;
+    QPointF m_dragVal;
+    QSet<QString> m_existNames;
 
-    bool isStop;
-
-    bool isDrag;
-    QPointF dVal;
-
-    bool isExist;
-
-    QSet<QString> m_existName;
-
+    // UI组件
+    ControlPanel* m_controlPanel;
+    CpuWidget* m_cpuWidget;
+    ReadyQueueWidget* m_readyQueue;
+    GanttWidget* m_ganttWidget;
+    QScrollArea* m_ganttScroll;
+    StatsPanel* m_statsPanel;
+    ExplanationBar* m_explanationBar;
 };
+
 #endif // MAINWINDOW_H

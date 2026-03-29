@@ -1,469 +1,384 @@
 #include "mainwindow.h"
-#include "./ui_mainwindow.h"
+#include "CyberStyle.h"
+#include "ColorGenerator.h"
+#include "ComparisonDialog.h"
 
-#include <QDialog>
-#include <QListWidgetItem>
-#include <warning.h>
-#include "TitleItem.h"
-#include "NodeItem.h"
-#include "ScheDuler.h"
-#include "ListSorter.h"
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QPushButton>
+#include <QLabel>
+#include <QScrollArea>
+#include <QScrollBar>
 #include <QMessageBox>
+#include <QGraphicsDropShadowEffect>
+#include <QRandomGenerator>
 
-
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
     , m_timer(new QTimer(this))
-    , isStop(true)
-    , isExist(false)
 {
-    ui->setupUi(this);
+    m_scheduler = std::make_shared<Scheduler>();
 
-    this->m_scheduler = std::make_shared<Scheduler>();
-    GuiInit();
-
-    ui->SetSingleButton->setEnabled(false);
-    ui->SetAutoButton->setEnabled(false);
-
-    //行数改变时信号
-    connect(ui->ReadyQueue,&QListWidget::currentRowChanged,this,[this](int currentRow){
-        if(currentRow >= 2 || !isStop){
-            ui->SetSingleButton->setEnabled(true);
-            ui->SetAutoButton->setEnabled(true);
-        }
-        else{
-            ui->SetSingleButton->setEnabled(false);
-            ui->SetAutoButton->setEnabled(false);
-        }
-    });
-
-
-    //连接定时器  调用start开始执行
-    connect(m_timer,&QTimer::timeout,this,&MainWindow::on_SetSingleButton_clicked);
-
+    setupUI();
+    connectSignals();
 
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowMinimizeButtonHint);
-    //设置透明
     setAttribute(Qt::WA_TranslucentBackground);
-
     setWindowIcon(QIcon(":/icon/process.png"));
-
-
+    setMinimumSize(1100, 750);
+    resize(1200, 800);
 }
 
-MainWindow::~MainWindow()
-{
-    delete ui;
+MainWindow::~MainWindow() {}
+
+void MainWindow::setupUI() {
+    auto* central = new QWidget(this);
+    central->setStyleSheet(QString(
+        "background-color: %1; border-radius: 10px; border: 1px solid %2;")
+        .arg(Cyber::BG_DEEP).arg(Cyber::BORDER_LIT));
+    setCentralWidget(central);
+
+    auto* rootLayout = new QVBoxLayout(central);
+    rootLayout->setContentsMargins(0, 0, 0, 0);
+    rootLayout->setSpacing(0);
+
+    // === 标题栏 ===
+    auto* titleBar = new QWidget(central);
+    titleBar->setFixedHeight(50);
+    titleBar->setStyleSheet(QString(
+        "background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "stop:0 %1, stop:1 %2); "
+        "border-bottom: 1px solid %3;")
+        .arg(Cyber::BG_DEEP).arg(Cyber::BG_PANEL).arg(Cyber::BORDER_LIT));
+    auto* titleLayout = new QHBoxLayout(titleBar);
+    titleLayout->setContentsMargins(15, 5, 10, 5);
+
+    auto* iconBtn = new QPushButton(titleBar);
+    iconBtn->setIcon(QIcon(":/icon/process.png"));
+    iconBtn->setIconSize(QSize(26, 26));
+    iconBtn->setFixedSize(35, 35);
+    iconBtn->setStyleSheet("border: none; background: transparent;");
+    titleLayout->addWidget(iconBtn);
+
+    auto* titleLabel = new QLabel(QString::fromUtf8("⚡ 进程调度仿真系统"), titleBar);
+    titleLabel->setStyleSheet(CyberStyle::neonTitle());
+    titleLayout->addWidget(titleLabel);
+
+    // 标题发光效果
+    auto* titleGlow = new QGraphicsDropShadowEffect;
+    titleGlow->setColor(QColor(Cyber::CYAN));
+    titleGlow->setBlurRadius(25);
+    titleGlow->setOffset(0, 0);
+    titleLabel->setGraphicsEffect(titleGlow);
+
+    titleLayout->addStretch();
+
+    auto* miniBtn = new QPushButton(titleBar);
+    miniBtn->setIcon(QIcon(":/icon/mini.png"));
+    miniBtn->setIconSize(QSize(18, 18));
+    miniBtn->setFixedSize(35, 35);
+    miniBtn->setStyleSheet(
+        "QPushButton { border: none; background: transparent; border-radius: 4px; }"
+        "QPushButton:hover { background-color: rgba(0,255,255,0.15); }");
+    connect(miniBtn, &QPushButton::clicked, this, &QMainWindow::showMinimized);
+    titleLayout->addWidget(miniBtn);
+
+    auto* closeBtn = new QPushButton(titleBar);
+    closeBtn->setIcon(QIcon(":/icon/close.png"));
+    closeBtn->setIconSize(QSize(18, 18));
+    closeBtn->setFixedSize(35, 35);
+    closeBtn->setStyleSheet(
+        "QPushButton { border: none; background: transparent; border-radius: 4px; }"
+        "QPushButton:hover { background-color: rgba(255,51,102,0.3); }");
+    connect(closeBtn, &QPushButton::clicked, this, &QMainWindow::close);
+    titleLayout->addWidget(closeBtn);
+
+    rootLayout->addWidget(titleBar);
+
+    // === 主体区域 ===
+    auto* bodyLayout = new QHBoxLayout;
+    bodyLayout->setContentsMargins(10, 0, 10, 10);
+    bodyLayout->setSpacing(10);
+
+    // 左侧控制面板
+    m_controlPanel = new ControlPanel(central);
+    bodyLayout->addWidget(m_controlPanel);
+
+    // 中央区域
+    auto* centerLayout = new QVBoxLayout;
+    centerLayout->setSpacing(8);
+
+    m_cpuWidget = new CpuWidget(central);
+    centerLayout->addWidget(m_cpuWidget);
+
+    m_readyQueue = new ReadyQueueWidget(central);
+    centerLayout->addWidget(m_readyQueue);
+
+    // 甘特图放在ScrollArea中
+    m_ganttScroll = new QScrollArea(central);
+    m_ganttScroll->setWidgetResizable(true);
+    m_ganttScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_ganttScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_ganttScroll->setStyleSheet("QScrollArea { background: transparent; border: none; }");
+    m_ganttWidget = new GanttWidget;
+    m_ganttScroll->setWidget(m_ganttWidget);
+    centerLayout->addWidget(m_ganttScroll, 1);
+
+    bodyLayout->addLayout(centerLayout, 1);
+
+    // 右侧统计面板
+    m_statsPanel = new StatsPanel(central);
+    bodyLayout->addWidget(m_statsPanel);
+
+    rootLayout->addLayout(bodyLayout, 1);
+
+    // === 底部解释栏 ===
+    m_explanationBar = new ExplanationBar(central);
+    auto* bottomLayout = new QHBoxLayout;
+    bottomLayout->setContentsMargins(10, 0, 10, 10);
+    bottomLayout->addWidget(m_explanationBar);
+    rootLayout->addLayout(bottomLayout);
 }
 
-void MainWindow::GuiInit()
-{
-    //完成队列设置成两行
-    ui->FinishQueue->setColumnCount(1);
-
-    QStringList headers;
-    headers << "进程名称";
-    ui->FinishQueue->setHorizontalHeaderLabels(headers);
-
-    QLabel* l = new QLabel;
-    l->setText("就绪队列");
-
-    QListWidgetItem* item = new QListWidgetItem;
-    ui->ReadyQueue->addItem(item);
-    ui->ReadyQueue->setItemWidget(item,l);
-
-    QListWidgetItem* titleItem = new QListWidgetItem;
-    ui->ReadyQueue->addItem(titleItem);
-    TitleItem* title = new TitleItem(ui->ReadyQueue);
-    titleItem->setSizeHint(title->sizeHint());
-    ui->ReadyQueue->setItemWidget(titleItem,title);
-
-    //优化字体
-    QFont font;
-    font.setBold(true);
-
-    ui->Title->setFont(font);
-    ui->Name->setFont(font);
-    ui->Label->setFont(font);
-    ui->Status->setFont(font);
-    ui->Priority->setFont(font);
-    ui->Rtime->setFont(font);
-
-
-    connect(this,&MainWindow::isExecute,this,[this](bool b){
-        if(b){
-            ui->AddProcessButton->setEnabled(false);
-            ui->RestButton->setEnabled(false);
-        }
-        else{
-            ui->AddProcessButton->setEnabled(true);
-            ui->RestButton->setEnabled(true);
-        }
+void MainWindow::connectSignals() {
+    connect(m_controlPanel, &ControlPanel::addProcessClicked, this, &MainWindow::onAddProcess);
+    connect(m_controlPanel, &ControlPanel::randomGenerateClicked, this, &MainWindow::onRandomGenerate);
+    connect(m_controlPanel, &ControlPanel::singleStepClicked, this, &MainWindow::onSingleStep);
+    connect(m_controlPanel, &ControlPanel::autoRunClicked, this, &MainWindow::onAutoRun);
+    connect(m_controlPanel, &ControlPanel::resetClicked, this, &MainWindow::onReset);
+    connect(m_controlPanel, &ControlPanel::compareClicked, this, &MainWindow::onCompare);
+    connect(m_controlPanel, &ControlPanel::algorithmChanged, this, &MainWindow::onAlgorithmChanged);
+    connect(m_controlPanel, &ControlPanel::speedChanged, this, &MainWindow::onSpeedChanged);
+    connect(m_controlPanel, &ControlPanel::timeQuantumChanged, this, [this](int q) {
+        m_scheduler->setTimeQuantum(q);
     });
+    connect(m_timer, &QTimer::timeout, this, &MainWindow::executeStep);
 }
 
-void MainWindow::AddTableValue(QString name)
-{
-    int row = ui->FinishQueue->rowCount();
+void MainWindow::onAddProcess() {
+    QString name = m_controlPanel->processName().trimmed();
+    if(name.isEmpty()) {
+        QMessageBox::warning(this, QString::fromUtf8("提示"), QString::fromUtf8("请输入进程名称！"));
+        return;
+    }
+    if(m_existNames.contains(name)) {
+        QMessageBox::warning(this, QString::fromUtf8("提示"), QString::fromUtf8("进程名称已存在！"));
+        return;
+    }
 
-    ui->FinishQueue->insertRow(row);
+    int priority = m_controlPanel->processPriority();
+    int ntime = m_controlPanel->processTime();
 
-    ui->FinishQueue->setItem(row,0,new QTableWidgetItem(name));
+    Process* proc = new Process(name.toStdString(), priority, ntime);
+    proc->setColor(ColorGenerator::next());
 
-    //每一层插入到尾部，直接滚动到底部
-    ui->FinishQueue->scrollToBottom();
+    int index = m_scheduler->addProcess(proc);
+    m_existNames.insert(name);
+    m_controlPanel->clearInputs();
 
+    // 刷新就绪队列显示
+    m_readyQueue->refreshAll(m_scheduler->getReadyList());
+    m_statsPanel->updateStats(m_scheduler.get());
+
+    m_controlPanel->setControlsEnabled(!m_scheduler->getReadyList().empty());
 }
 
-bool MainWindow::containsDuplicateNames(QString name)
-{
-    if(m_existName.isEmpty() || !m_existName.contains(name))
-        return false;
+void MainWindow::onRandomGenerate() {
+    static const QStringList names = {
+        "P1","P2","P3","P4","P5","P6","P7","P8","P9","P10",
+        "A","B","C","D","E","X","Y","Z","Alpha","Beta"
+    };
 
-    return true;
+    int count = QRandomGenerator::global()->bounded(3, 6); // 3~5个
+    int added = 0;
+
+    for(int i = 0; i < count && added < count; i++) {
+        QString name = names[QRandomGenerator::global()->bounded(names.size())];
+        if(m_existNames.contains(name)) continue;
+
+        int priority = QRandomGenerator::global()->bounded(1, 20);
+        int ntime = QRandomGenerator::global()->bounded(1, 8);
+
+        Process* proc = new Process(name.toStdString(), priority, ntime);
+        proc->setColor(ColorGenerator::next());
+        m_scheduler->addProcess(proc);
+        m_existNames.insert(name);
+        added++;
+    }
+
+    m_readyQueue->refreshAll(m_scheduler->getReadyList());
+    m_statsPanel->updateStats(m_scheduler.get());
+    m_controlPanel->setControlsEnabled(!m_scheduler->getReadyList().empty());
+
+    m_explanationBar->setText(QString::fromUtf8("随机生成了 %1 个进程，准备就绪。").arg(added));
 }
 
-
-
-void MainWindow::on_AddProcessButton_clicked()
-{
-    AddProcessWidget* add = new AddProcessWidget;
-
-
-    QVBoxLayout* mainLayout = new QVBoxLayout;
-    mainLayout->addWidget(add);
-
-
-    QDialog log(this);
-    log.setLayout(mainLayout);
-
-    //注意这里不是accepted和rejected，这两个表示监听关闭后的动作
-    connect(add,&AddProcessWidget::accepted,&log,&QDialog::accept);
-    connect(add,&AddProcessWidget::rejected,&log,&QDialog::reject);
-
-
-    connect(add,&AddProcessWidget::check,this,[this](QWidget* w){
-        AddProcessWidget* a = qobject_cast<AddProcessWidget*>(w);
-
-        if(containsDuplicateNames(a->getName())){
-            a->setNameStyle(QString("QLineEdit {"
-                    "border-radius: 6px;"
-                    "padding: 5px;"
-                    "background-color: #fff5f5;"
-                    "font-size: 13px;"
-                    "color: #c0392b;"
-                    "}"));
-            isExist = true;
-        }
-        else{
-            a->setNameStyle(QString("#Name{"
-                    "border-radius: 6px;"
-                    "border-right: none;"
-                    "padding: 5px;"
-                    "font-size: 10px;"
-                    "font-weight: bold;"
-                    "}"));
-
-            isExist = false;
-        }
-
-        m_existName.insert(a->getName());
-    });
-
-
-    if(log.exec() == QDialog::Accepted){
-        if(isExist)
-        {
-            QMessageBox::warning(&log, "警告", "名称已存在，请修改！");
-        }
-        else{
-
-            QString name = add->getName();
-            QString priority = add->getPriority();
-            QString ntime = add->getRunTime();
-
-            //插入调度器的链表队列
-            int index = ListSorter::insertByPriority(m_scheduler->getList(),
-                                                     new Process(name.toStdString(),priority.toInt(),ntime.toInt()));
-
-            NodeItem* node = new NodeItem;
-            node->setValue(name,priority,ntime);
-            QListWidgetItem* item = new QListWidgetItem;
-            item->setSizeHint(node->sizeHint());
-
-            ui->ReadyQueue->insertItem(index + 2,item);
-            ui->ReadyQueue->setItemWidget(item,node);
-            //自动导航到新加入的位置
-            ui->ReadyQueue->setCurrentItem(item);
-
-            connect(node,&NodeItem::deleteClicked,this,[this](QWidget* w){
-
-                if (!w) return;
-
-                for(int i = 0;i < ui->ReadyQueue->count();i++){
-                    QListWidgetItem* item = ui->ReadyQueue->item(i);
-
-                    NodeItem* node = qobject_cast<NodeItem*>(ui->ReadyQueue->itemWidget(item));
-
-                    if(node == w){
-                        QListWidgetItem* takenItem = ui->ReadyQueue->takeItem(i);
-                        delete takenItem;
-                        break;
-                    }
-                }
-
-                NodeItem* node = qobject_cast<NodeItem*>(w);
-                QString name = node->getName();
-
-                List<Process*>::Node* cur = m_scheduler->getList().getHead();
-                List<Process*>::Node* preNode = nullptr;
-
-                while(cur && cur->data->getName() != name){
-                    preNode = cur;
-                    cur = cur->next;
-                }
-
-                if(cur){
-                    //如果preNode没有赋值说明删除第一个节点
-                    if(preNode)
-                        preNode->next = cur->next;
-                    else
-                        m_scheduler->getList().setHead(cur->next);
-
-                    m_existName.remove(name);
-                    delete cur;
-                }
-
-
-            });
-
-        //删除组件
-        add->deleteLater();
-        log.close();
-        }
-
-    }
-    else{
-        //删除组件
-        add->deleteLater();
-        log.close();
-
-    }
+void MainWindow::onSingleStep() {
+    executeStep();
 }
 
-
-void MainWindow::on_SetSingleButton_clicked()
-{
-    Process* p = m_scheduler->stepRun();
-    isStop = false;
-
-    //记录是否处于定时器状态
-    bool wasAutoRunning = m_timer->isActive();
-
-    if(!wasAutoRunning){
-        emit isExecute(true);
-        qDebug() << '1';
-    }
-
-    if(!p){
-        if(m_timer->isActive()){
-            m_timer->stop();
-            ui->SetAutoButton->setText("自动运行");
-            emit isExecute(false);
-            return;
-        }
-    }
-
-    //每次取出第一个数据，直接一起第一项  前面有2个组件索引是2
-    QListWidgetItem* item = ui->ReadyQueue->takeItem(2);
-
-
-    if(!item) return;
-
-
-    delete item;
-
-    ui->Name->setText(QString("进程名:") + QString::fromStdString(p->getName()));
-    ui->Priority->setText(QString("优先级:") + QString::number(p->getPriority()));
-
-    ui->Ntime->setText(QString("总时间:") + QString::number(p->getNTime()));
-    ui->Rtime->setText(QString("运行时间:") + QString::number(p->getRTime()));
-    ui->Status->setText(QString("状态:运行"));
-
-
-
-    //判断是否完成
-    if(p->isFinish()){
-        if (wasAutoRunning)
-            m_timer->stop();
-
-        QTimer::singleShot(1000, this, [this,wasAutoRunning](){
-            if(ui->ReadyQueue->currentRow() == 1){
-                ui->Name->setText(QString("进程名:") );
-                ui->Priority->setText(QString("优先级:") );
-
-                ui->Ntime->setText(QString("总时间:") );
-                ui->Rtime->setText(QString("运行时间:") );
-                ui->Status->setText(QString("状态:"));
-            }
-
-            if (!m_scheduler->getList().empty()) {
-                if (wasAutoRunning) m_timer->start();
-            }
-            else
-            {
-                isStop = true;
-                emit isExecute(false);
-                ui->SetAutoButton->setText("自动运行");
-            }
-        });
-
-
-        AddTableValue(QString::fromStdString(p->getName()));
-    }
-    else{
-        if (wasAutoRunning)
-            m_timer->stop();
-
-        emit isExecute(true);
-
-
-        QTimer::singleShot(1000, this, [this,p,wasAutoRunning](){
-            NodeItem* node = new NodeItem;
-
-            node->setValue( QString::fromStdString(p->getName()),
-                            QString::number(p->getPriority()),
-                            QString::number(p->getRTime()),
-                            QString::number(p->getNTime()));
-
-            QListWidgetItem* item = new QListWidgetItem;
-            item->setSizeHint(node->sizeHint());
-
-
-            ListSorter::insertByPriority(m_scheduler->getList(),
-                        new Process(p->getName(),p->getPriority(),p->getRTime(),p->getNTime()));
-
-
-            int newIndex = 0;
-            auto head = m_scheduler->getList().getHead();
-            while(head && head->data != p) {
-                newIndex++;
-                head = head->next;
-            }
-
-            ui->ReadyQueue->insertItem(newIndex + 2, item);
-            ui->ReadyQueue->setItemWidget(item, node);
-
-            ui->ReadyQueue->setCurrentItem(item);
-            ui->ReadyQueue->scrollToItem(item);
-
-            ui->Status->setText(QString("状态:完成"));
-
-            if (!m_scheduler->getList().empty())
-            {
-             if (wasAutoRunning) m_timer->start();
-            }
-            else
-            {
-                isStop = true;
-                emit isExecute(false);
-                ui->SetAutoButton->setText("自动运行");
-            }
-        });
-    }
-
-    if(!wasAutoRunning){
-        emit isExecute(false);
-        qDebug() << '1';
-    }
-
-    if(m_scheduler->getList().empty()){
-        isStop = true;
-        ui->SetAutoButton->setEnabled(false);
-        ui->SetSingleButton->setEnabled(false);
-
-        emit isExecute(false);
-    }
-
-
-}
-
-
-void MainWindow::on_SetAutoButton_clicked()
-{
-    //启动定时器
-    if(!m_timer->isActive()){
-        if(m_scheduler->getList().empty())  return;
-
-        m_timer->start(1000);
-
-        ui->SetSingleButton->setEnabled(false);
-        ui->SetAutoButton->setText("停止运行");
-
-
-        emit isExecute(true);
-    }
-    else{
+void MainWindow::onAutoRun() {
+    if(!m_autoRunning) {
+        if(m_scheduler->getReadyList().empty() && !m_scheduler->getCurrentProcess()) return;
+        m_autoRunning = true;
+        m_timer->start(m_controlPanel->speedMs());
+        m_controlPanel->setAutoRunning(true);
+        m_controlPanel->setRunning(true);
+    } else {
+        m_autoRunning = false;
         m_timer->stop();
-        ui->SetSingleButton->setEnabled(true);
-        ui->SetAutoButton->setText("自动运行");
-
-        emit isExecute(false);
+        m_controlPanel->setAutoRunning(false);
+        m_controlPanel->setRunning(false);
     }
 }
 
+void MainWindow::onReset() {
+    m_timer->stop();
+    m_autoRunning = false;
+    m_scheduler->reset();
+    m_existNames.clear();
 
-void MainWindow::on_RestButton_clicked()
-{
+    m_cpuWidget->clearProcess();
+    m_cpuWidget->setTick(0);
+    m_readyQueue->clear();
+    m_ganttWidget->clear();
+    m_statsPanel->clear();
+    m_explanationBar->clear();
+    m_controlPanel->setAutoRunning(false);
+    m_controlPanel->setRunning(false);
+    m_controlPanel->setControlsEnabled(false);
+}
 
-    QStringList headers;
-    headers << "进程名称";
-    ui->FinishQueue->setHorizontalHeaderLabels(headers);
+void MainWindow::onCompare() {
+    const auto& allProcs = m_scheduler->getAllProcesses();
+    if(allProcs.empty()) {
+        QMessageBox::warning(this, QString::fromUtf8("提示"),
+                             QString::fromUtf8("请先添加进程再进行算法对比！"));
+        return;
+    }
 
-    int currentRow = ui->FinishQueue->currentRow();
+    ComparisonDialog dlg(allProcs, this);
+    dlg.exec();
+}
 
-    if (currentRow != -1)
-        ui->FinishQueue->removeRow(currentRow);
-
-
-    while(ui->ReadyQueue->currentRow() >= 2){
-        QListWidgetItem *item = ui->ReadyQueue->currentItem();
-        delete item;
+void MainWindow::onAlgorithmChanged(Algorithm algo) {
+    // 只在没开始运行时允许切换
+    if(m_scheduler->getTick() == 0) {
+        m_scheduler->setStrategy(algo);
+        m_statsPanel->updateStats(m_scheduler.get());
+        // 重新排列就绪队列
+        // 取出所有进程重新插入
+        std::vector<Process*> procs;
+        while(!m_scheduler->getReadyList().empty()) {
+            Process* p = m_scheduler->getReadyList().front();
+            m_scheduler->getReadyList().pop_front();
+            procs.push_back(p);
+        }
+        // 清空allProcesses中的指针（addProcess会重新添加）
+        // 注意：这里需要小心内存管理
+        m_scheduler->reset();
+        m_existNames.clear();
+        for(auto* p : procs) {
+            Process* newP = new Process(p->getName(), p->getOriginalPriority(), p->getNTime());
+            newP->setColor(p->getColor());
+            m_scheduler->addProcess(newP);
+            m_existNames.insert(QString::fromStdString(p->getName()));
+            delete p;
+        }
+        m_readyQueue->refreshAll(m_scheduler->getReadyList());
+        m_controlPanel->setControlsEnabled(!m_scheduler->getReadyList().empty());
     }
 }
 
-
-void MainWindow::on_CloseButton_clicked()
-{
-    this->close();
-}
-
-
-void MainWindow::on_MiniButton_clicked()
-{
-    this->showMinimized();
-}
-
-void MainWindow::mousePressEvent(QMouseEvent *ev)
-{
-    if(ev->button() == Qt::LeftButton){
-        isDrag = true;
-
-        dVal = ev->globalPosition() - pos();
+void MainWindow::onSpeedChanged(int ms) {
+    if(m_timer->isActive()) {
+        m_timer->setInterval(ms);
     }
 }
 
-void MainWindow::mouseMoveEvent(QMouseEvent *ev)
-{
-    if(isDrag){
-        move((ev->globalPosition() - dVal).toPoint());
+void MainWindow::executeStep() {
+    if(m_scheduler->getReadyList().empty() && !m_scheduler->getCurrentProcess()) {
+        // 执行完毕
+        m_timer->stop();
+        m_autoRunning = false;
+        m_cpuWidget->clearProcess();
+        m_controlPanel->setAutoRunning(false);
+        m_controlPanel->setRunning(false);
+        m_controlPanel->setControlsEnabled(false);
+        m_explanationBar->setText(QString::fromUtf8("所有进程执行完毕！"));
+        return;
+    }
+
+    m_controlPanel->setRunning(true);
+
+    StepResult result = m_scheduler->stepRun();
+
+    // 更新CPU显示
+    if(result.process) {
+        m_cpuWidget->setProcess(result.process);
+    } else {
+        m_cpuWidget->clearProcess();
+    }
+    m_cpuWidget->setTick(m_scheduler->getTick());
+
+    // 更新就绪队列
+    m_readyQueue->refreshAll(m_scheduler->getReadyList());
+
+    // 更新甘特图
+    m_ganttWidget->setGanttData(m_scheduler->getGanttData(), m_scheduler->getTick());
+    // 自动滚动到右侧
+    if(m_ganttScroll->horizontalScrollBar()) {
+        m_ganttScroll->horizontalScrollBar()->setValue(
+            m_ganttScroll->horizontalScrollBar()->maximum());
+    }
+
+    // 更新统计
+    m_statsPanel->updateStats(m_scheduler.get());
+
+    // 更新解释
+    m_explanationBar->setText(result.explanation);
+
+    // 检查是否全部完成
+    if(m_scheduler->getReadyList().empty() && !m_scheduler->getCurrentProcess()) {
+        if(!m_autoRunning) {
+            m_controlPanel->setRunning(false);
+            m_controlPanel->setControlsEnabled(false);
+        }
+    } else {
+        if(!m_autoRunning) {
+            m_controlPanel->setRunning(false);
+        }
     }
 }
 
-void MainWindow::mouseReleaseEvent(QMouseEvent *ev)
-{
+void MainWindow::refreshUI() {
+    m_readyQueue->refreshAll(m_scheduler->getReadyList());
+    m_statsPanel->updateStats(m_scheduler.get());
+    m_ganttWidget->setGanttData(m_scheduler->getGanttData(), m_scheduler->getTick());
+}
+
+void MainWindow::mousePressEvent(QMouseEvent* ev) {
+    if(ev->button() == Qt::LeftButton) {
+        m_isDrag = true;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        m_dragVal = ev->globalPosition() - pos();
+#else
+        m_dragVal = ev->globalPos() - pos();
+#endif
+    }
+}
+
+void MainWindow::mouseMoveEvent(QMouseEvent* ev) {
+    if(m_isDrag) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        move((ev->globalPosition() - m_dragVal).toPoint());
+#else
+        move((ev->globalPos() - m_dragVal).toPoint());
+#endif
+    }
+}
+
+void MainWindow::mouseReleaseEvent(QMouseEvent* ev) {
     if(ev->button() == Qt::LeftButton)
-        isDrag = false;
+        m_isDrag = false;
 }
-
