@@ -20,7 +20,10 @@
    <string>Form</string>
   </property>
   <property name="styleSheet">
-   <string notr="true"/>
+   <string notr="true">#AddProcessWidget{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #ffffff, stop:1 #f5f5f5);
+}</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -32,12 +35,20 @@
       <widget class="QLineEdit" name="Name">
        <property name="styleSheet">
         <string notr="true">#Name{
-border-radius: 6px;
-border-right: none;
-padding: 5px;
-font-size: 10px;
-font-weight: bold;
- }</string>
+    background: white;
+    border: 2px solid #b0bec5;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #424242;
+}
+
+
+
+#Name:hover{
+    border: 2px solid #90caf9;
+}
+</string>
        </property>
        <property name="inputMask">
         <string/>
@@ -59,11 +70,19 @@ font-weight: bold;
     <widget class="QLineEdit" name="Priority">
      <property name="styleSheet">
       <string notr="true">#Priority{
-border-radius: 6px;
-padding: 5px;
-font-size: 10px;
-font-weight: bold;
- }</string>
+    background: white;
+    border: 2px solid #b0bec5;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #424242;
+}
+
+
+#Priority:hover{
+    border: 2px solid #90caf9;
+}
+</string>
      </property>
      <property name="text">
       <string/>
@@ -77,11 +96,18 @@ font-weight: bold;
     <widget class="QLineEdit" name="Ntime">
      <property name="styleSheet">
       <string notr="true">#Ntime{
-border-radius: 6px;
-padding: 5px;
-font-size: 10px;
-font-weight: bold;
- }</string>
+    background: white;
+    border: 2px solid #b0bec5;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #424242;
+}
+
+#Ntime:hover{
+    border: 2px solid #90caf9;
+}
+</string>
      </property>
      <property name="text">
       <string/>
@@ -106,6 +132,9 @@ font-weight: bold;
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="spacing">
+      <number>3</number>
+     </property>
      <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
@@ -123,22 +152,25 @@ font-weight: bold;
       <widget class="QPushButton" name="CancleButton">
        <property name="styleSheet">
         <string notr="true">#CancleButton{
-border-radius: 6px;
-padding: 5px;
-font-size: 10px;
-font-weight: bold;
-background-color: #FFFFFF; 
-border: 1px solid #DCDCDC; 
-color: #666666;
- }
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #90a4ae, stop:1 #78909c);
+    color: white;
+    border: none;
+    border-radius: 6px;      
+    padding: 4px 12px;     
+    font-size: 12px;         
+    font-weight: bold;
+}
 
-#CancleButton:hover {
-            background-color: #5AA2F1;
- }
-#CancleButton:pressed {
-            background-color: #357ABD;
-            padding-top: 11px; padding-bottom: 9px;
- }</string>
+#CancleButton:hover{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #b0bec5, stop:1 #90a4ae);
+}
+
+#CancleButton:pressed{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #78909c, stop:1 #607d8b);
+}</string>
        </property>
        <property name="text">
         <string>取消</string>
@@ -149,27 +181,30 @@ color: #666666;
       <widget class="QPushButton" name="ComfireButton">
        <property name="styleSheet">
         <string notr="true">#ComfireButton{
-border-radius: 6px;
-padding: 5px;
-font-size: 10px;
-font-weight: bold;
-background-color: #FFFFFF; 
-border: 1px solid #DCDCDC; 
-color: #666666;
- }
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #66bb6a, stop:1 #43a047);
+    color: white;
+    border: none;
+    border-radius: 6px;     
+    padding: 4px 12px;      
+    font-size: 12px;         
+    font-weight: bold;
 
-#ComfireButton:hover {
-            background-color: #5AA2F1;
- }
-#ComfireButton:pressed {
-            background-color: #357ABD;
-            padding-top: 11px; padding-bottom: 9px;
- }
+}
 
-#ComfireButton:disabled {
-        background-color: #E0E0E0;
-        color: #A0A0A0;
-        border: 1px solid #D3D3D3;
+#ComfireButton:hover{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #81c784, stop:1 #66bb6a);
+}
+
+#ComfireButton:pressed{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #43a047, stop:1 #388e3c);
+}
+
+#ComfireButton:disabled{
+    background: #bdbdbd;
+    color: #9e9e9e;
 }</string>
        </property>
        <property name="text">

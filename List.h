@@ -36,6 +36,9 @@ private:
         this->m_size = 0;
     }
 
+    List(const List&) = delete;
+    List& operator=(const List&) = delete;
+
 public:
     /**
      * @brief 构造函数
@@ -79,7 +82,7 @@ public:
      */
     T front(){
         if(this->m_head)  return this->m_head->data;
-        return nullptr;
+        return T();
     }
 
     /**
@@ -136,7 +139,7 @@ public:
      * @details 排序后重新加入链表
      */
     void setHead(Node* node){
-
+        if(node == this->getHead())  return;
         clear();
         this->m_head = node;
 

@@ -11,8 +11,10 @@ Scheduler::~Scheduler(){
     while(node)
     {
         delete node->data;
+        node->data = nullptr;
         node = node->next;
     }
+
 }
 
 

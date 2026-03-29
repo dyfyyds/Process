@@ -35,9 +35,10 @@
    <property name="styleSheet">
     <string notr="true">#centralwidget
 {
-background:rgb(13, 66, 130);
-border-radius:10px;
-border:1px solid rgb(30,157,255);
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #1a237e, stop:0.5 #283593, stop:1 #3949ab);
+    border-radius: 12px;
+    border: 2px solid #5c6bc0;
 }</string>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -182,6 +183,13 @@ background-color:rgb(255, 0, 4)
              <height>40</height>
             </size>
            </property>
+           <property name="styleSheet">
+            <string notr="true">#Icon{
+border:none;
+border-radius:8px;
+background: rgba(255, 255, 255, 0.1);
+}</string>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -204,6 +212,12 @@ background-color:rgb(255, 0, 4)
              <pointsize>12</pointsize>
              <bold>true</bold>
             </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">#Label{
+color:#ffffff;
+background: transparent;
+}</string>
            </property>
            <property name="text">
             <string>进程调度仿真系统</string>
@@ -231,6 +245,12 @@ background-color:rgb(255, 0, 4)
              <layout class="QVBoxLayout" name="verticalLayout">
               <item>
                <widget class="QLabel" name="Title">
+                <property name="styleSheet">
+                 <string notr="true">#Title{
+    color: #1976d2;
+    background: transparent;
+}</string>
+                </property>
                 <property name="text">
                  <string>运行中进程</string>
                 </property>
@@ -240,6 +260,12 @@ background-color:rgb(255, 0, 4)
                <layout class="QHBoxLayout" name="horizontalLayout_2">
                 <item>
                  <widget class="QLabel" name="Name">
+                  <property name="styleSheet">
+                   <string notr="true">#Name{
+    color: #424242;
+    background: transparent;
+}</string>
+                  </property>
                   <property name="text">
                    <string>进程名:</string>
                   </property>
@@ -247,6 +273,12 @@ background-color:rgb(255, 0, 4)
                 </item>
                 <item>
                  <widget class="QLabel" name="Priority">
+                  <property name="styleSheet">
+                   <string notr="true">#Priority{
+    color: #424242;
+    background: transparent;
+}</string>
+                  </property>
                   <property name="text">
                    <string>优先级:</string>
                   </property>
@@ -254,6 +286,12 @@ background-color:rgb(255, 0, 4)
                 </item>
                 <item>
                  <widget class="QLabel" name="Status">
+                  <property name="styleSheet">
+                   <string notr="true">#Status{
+    color: #424242;
+    background: transparent;
+}</string>
+                  </property>
                   <property name="text">
                    <string>状态:</string>
                   </property>
@@ -261,6 +299,12 @@ background-color:rgb(255, 0, 4)
                 </item>
                 <item>
                  <widget class="QLabel" name="Rtime">
+                  <property name="styleSheet">
+                   <string notr="true">#Rtime{
+    color: #424242;
+    background: transparent;
+}</string>
+                  </property>
                   <property name="text">
                    <string>运行时间:</string>
                   </property>
@@ -273,6 +317,12 @@ background-color:rgb(255, 0, 4)
                     <bold>true</bold>
                    </font>
                   </property>
+                  <property name="styleSheet">
+                   <string notr="true">#Ntime{
+    color: #424242;
+    background: transparent;
+}</string>
+                  </property>
                   <property name="text">
                    <string>总时间:</string>
                   </property>
@@ -284,7 +334,25 @@ background-color:rgb(255, 0, 4)
             </widget>
            </item>
            <item>
-            <widget class="QListWidget" name="ReadyQueue"/>
+            <widget class="QListWidget" name="ReadyQueue">
+             <property name="styleSheet">
+              <string notr="true">#ReadyQueue{
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #b0bec5;
+    border-radius: 8px;
+    outline: none;
+}
+
+#ReadyQueue::item{
+    border: none;
+    border-radius: 6px;
+    margin: 2px;
+    padding: 2px;
+}
+
+</string>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QLabel" name="FinishLabel">
@@ -293,6 +361,12 @@ background-color:rgb(255, 0, 4)
                <pointsize>10</pointsize>
                <bold>true</bold>
               </font>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">#FinishLabel{
+color:#ffffff;
+background: transparent;
+}</string>
              </property>
              <property name="text">
               <string>运行完成列表</string>
@@ -312,6 +386,31 @@ background-color:rgb(255, 0, 4)
                <width>16777215</width>
                <height>200</height>
               </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">#FinishQueue{
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #b0bec5;
+    border-radius: 8px;
+    gridline-color: #e0e0e0;
+}
+
+#FinishQueue::item{
+    padding: 5px;
+}
+
+#FinishQueue::item:selected{
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+QHeaderView::section{
+    background: #546e7a;
+    color: white;
+    padding: 6px;
+    border: none;
+    font-weight: bold;
+}</string>
              </property>
              <property name="editTriggers">
               <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
@@ -338,34 +437,30 @@ background-color:rgb(255, 0, 4)
            <item>
             <widget class="QPushButton" name="AddProcessButton">
              <property name="styleSheet">
-              <string notr="true">#AddProcessButton {
-    background-color: #4CAF50;
+              <string notr="true">#AddProcessButton{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #66bb6a, stop:1 #43a047);
     color: white;
     border: none;
-    border-radius: 6px;
-    padding: 5px 6px;
-    font-size: 12px;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
     font-weight: bold;
-
 }
 
-#AddProcessButton:hover {
-
-    background-color: #45a049;
-
+#AddProcessButton:hover{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #81c784, stop:1 #66bb6a);
 }
 
 #AddProcessButton:pressed{
-
-    background-color: #3d8b40;
-
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #43a047, stop:1 #388e3c);
 }
 
-#AddProcessButton:disabled {
-
-    background-color: #cccccc;
-    color: #666666;
-
+#AddProcessButton:disabled{
+    background: #bdbdbd;
+    color: #757575;
 }</string>
              </property>
              <property name="text">
@@ -376,30 +471,30 @@ background-color:rgb(255, 0, 4)
            <item>
             <widget class="QPushButton" name="SetSingleButton">
              <property name="styleSheet">
-              <string notr="true">#SetSingleButton {
-    background-color: #4CAF50;
+              <string notr="true">#SetSingleButton{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #42a5f5, stop:1 #1e88e5);
     color: white;
     border: none;
-    border-radius: 6px;
-    padding: 5px 6px;
-    font-size: 12px;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
     font-weight: bold;
-    min-width: 100px;
 }
 
-#SetSingleButton:hover {
-
-    background-color: #45a049;
+#SetSingleButton:hover{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #64b5f6, stop:1 #42a5f5);
 }
 
 #SetSingleButton:pressed{
-    background-color: #3d8b40;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #1e88e5, stop:1 #1976d2);
 }
 
-#SetSingleButton:disabled {
-
-    background-color: #cccccc;
-    color: #666666;
+#SetSingleButton:disabled{
+    background: #bdbdbd;
+    color: #757575;
 }</string>
              </property>
              <property name="text">
@@ -410,34 +505,30 @@ background-color:rgb(255, 0, 4)
            <item>
             <widget class="QPushButton" name="SetAutoButton">
              <property name="styleSheet">
-              <string notr="true">#SetAutoButton {
-    background-color: #4CAF50;
+              <string notr="true">#SetAutoButton{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #ffa726, stop:1 #fb8c00);
     color: white;
     border: none;
-    border-radius: 6px;
-    padding: 5px 6px;
-    font-size: 12px;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
     font-weight: bold;
-
 }
 
-#SetAutoButton:hover {
-
-    background-color: #45a049;
-
+#SetAutoButton:hover{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #ffb74d, stop:1 #ffa726);
 }
 
 #SetAutoButton:pressed{
-
-    background-color: #3d8b40;
-
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #fb8c00, stop:1 #f57c00);
 }
 
-#SetAutoButton:disabled {
-
-    background-color: #cccccc;
-    color: #666666;
-
+#SetAutoButton:disabled{
+    background: #bdbdbd;
+    color: #757575;
 }</string>
              </property>
              <property name="text">
@@ -448,34 +539,30 @@ background-color:rgb(255, 0, 4)
            <item>
             <widget class="QPushButton" name="RestButton">
              <property name="styleSheet">
-              <string notr="true">#RestButton {
-    background-color: #4CAF50;
+              <string notr="true">#RestButton{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #ef5350, stop:1 #e53935);
     color: white;
     border: none;
-    border-radius: 6px;
-    padding: 5px 6px;
-    font-size: 12px;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
     font-weight: bold;
-
 }
 
-#RestButton:hover {
-
-    background-color: #45a049;
-
+#RestButton:hover{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #ef5350, stop:1 #ef5350);
 }
 
 #RestButton:pressed{
-
-    background-color: #3d8b40;
-
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #e53935, stop:1 #c62828);
 }
 
-#RestButton:disabled {
-
-    background-color: #cccccc;
-    color: #666666;
-
+#RestButton:disabled{
+    background: #bdbdbd;
+    color: #757575;
 }</string>
              </property>
              <property name="text">

@@ -61,6 +61,7 @@ void MainWindow::GuiInit()
 {
     //完成队列设置成两行
     ui->FinishQueue->setColumnCount(1);
+    ui->FinishQueue->verticalHeader()->setVisible(false);
 
     QStringList headers;
     headers << "进程名称";
@@ -147,28 +148,29 @@ void MainWindow::on_AddProcessButton_clicked()
         AddProcessWidget* a = qobject_cast<AddProcessWidget*>(w);
 
         if(containsDuplicateNames(a->getName())){
-            a->setNameStyle(QString("QLineEdit {"
-                    "border-radius: 6px;"
-                    "padding: 5px;"
-                    "background-color: #fff5f5;"
-                    "font-size: 13px;"
-                    "color: #c0392b;"
-                    "}"));
+            a->setNameStyle(QString("#Name{"
+                                    "color: #d32f2f;"
+                                    "border: 2px solid #ef5350;"
+                                    "background: #fff8f8;"
+                                    "}"));
             isExist = true;
         }
         else{
             a->setNameStyle(QString("#Name{"
-                    "border-radius: 6px;"
-                    "border-right: none;"
-                    "padding: 5px;"
-                    "font-size: 10px;"
-                    "font-weight: bold;"
-                    "}"));
+                                    "background: white;"
+                                    "border: 2px solid #b0bec5;"
+                                    "border-radius: 8px;"
+                                    "padding: 8px 12px;"
+                                    "font-size: 12px;"
+                                    "color: #424242;"
+                                    "}"
+
+                                    "#Name:hover{"
+                                    "border: 2px solid #90caf9;"
+                                    "}"));
 
             isExist = false;
         }
-
-        m_existName.insert(a->getName());
     });
 
 
@@ -187,6 +189,9 @@ void MainWindow::on_AddProcessButton_clicked()
             int index = ListSorter::insertByPriority(m_scheduler->getList(),
                                                      new Process(name.toStdString(),priority.toInt(),ntime.toInt()));
 
+            //插入到集合
+            m_existName.insert(name);
+
             NodeItem* node = new NodeItem;
             node->setValue(name,priority,ntime);
             QListWidgetItem* item = new QListWidgetItem;
@@ -201,20 +206,26 @@ void MainWindow::on_AddProcessButton_clicked()
 
                 if (!w) return;
 
+                NodeItem* n = qobject_cast<NodeItem*>(w);
+
+
                 for(int i = 0;i < ui->ReadyQueue->count();i++){
+
+                    qDebug() << ui->ReadyQueue->count();
                     QListWidgetItem* item = ui->ReadyQueue->item(i);
 
-                    NodeItem* node = qobject_cast<NodeItem*>(ui->ReadyQueue->itemWidget(item));
+                    NodeItem* node1 = qobject_cast<NodeItem*>(ui->ReadyQueue->itemWidget(item));
 
-                    if(node == w){
+                    if(!node1) continue;
+
+                    if(node1 == n){
                         QListWidgetItem* takenItem = ui->ReadyQueue->takeItem(i);
                         delete takenItem;
                         break;
                     }
                 }
 
-                NodeItem* node = qobject_cast<NodeItem*>(w);
-                QString name = node->getName();
+                QString name = n->getName();
 
                 List<Process*>::Node* cur = m_scheduler->getList().getHead();
                 List<Process*>::Node* preNode = nullptr;
@@ -227,12 +238,15 @@ void MainWindow::on_AddProcessButton_clicked()
                 if(cur){
                     //如果preNode没有赋值说明删除第一个节点
                     if(preNode)
+                    {
                         preNode->next = cur->next;
+                    }
                     else
+                    {
                         m_scheduler->getList().setHead(cur->next);
+                    }
 
                     m_existName.remove(name);
-                    delete cur;
                 }
 
 
@@ -416,15 +430,9 @@ void MainWindow::on_SetAutoButton_clicked()
 
 void MainWindow::on_RestButton_clicked()
 {
+    m_existName.clear();
 
-    QStringList headers;
-    headers << "进程名称";
-    ui->FinishQueue->setHorizontalHeaderLabels(headers);
-
-    int currentRow = ui->FinishQueue->currentRow();
-
-    if (currentRow != -1)
-        ui->FinishQueue->removeRow(currentRow);
+    ui->FinishQueue->setRowCount(0);
 
 
     while(ui->ReadyQueue->currentRow() >= 2){

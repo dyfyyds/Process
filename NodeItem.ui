@@ -13,6 +13,21 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">#NodeItem{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #ffffff, stop:1 #fafafa);
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 5px;
+}
+
+#NodeItem:hover{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #e3f2fd, stop:1 #bbdefb);
+    border: 1px solid #90caf9;
+}</string>
+  </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
     <widget class="QLabel" name="Name">
@@ -20,6 +35,12 @@
       <font>
        <bold>true</bold>
       </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#Name{
+    color: #1976d2;
+    background: transparent;
+}</string>
      </property>
      <property name="text">
       <string>TextLabel</string>
@@ -33,6 +54,12 @@
        <bold>true</bold>
       </font>
      </property>
+     <property name="styleSheet">
+      <string notr="true">#Status{
+    color: #388e3c;
+    background: transparent;
+}</string>
+     </property>
      <property name="text">
       <string>TextLabel</string>
      </property>
@@ -44,6 +71,12 @@
       <font>
        <bold>true</bold>
       </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#Priority{
+    color: #f57c00;
+    background: transparent;
+}</string>
      </property>
      <property name="text">
       <string>TextLabel</string>
@@ -57,6 +90,12 @@
        <bold>true</bold>
       </font>
      </property>
+     <property name="styleSheet">
+      <string notr="true">#Rtime{
+    color: #7b1fa2;
+    background: transparent;
+}</string>
+     </property>
      <property name="text">
       <string>TextLabel</string>
      </property>
@@ -68,6 +107,12 @@
       <font>
        <bold>true</bold>
       </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#Name{
+    color: #1976d2;
+    background: transparent;
+}</string>
      </property>
      <property name="text">
       <string>TextLabel</string>
@@ -96,18 +141,17 @@
      </property>
      <property name="styleSheet">
       <string notr="true">#IconpushButton{
-border:none;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
 }
 
-#IconpushButton:hover {
-    background-color: #FF7875;        
+#IconpushButton:hover{
+    background-color: #ffcdd2;
 }
 
-
-#IconpushButton:pressed {
-    background-color: #D9363E;    
-    padding-top: 9px;               
-    padding-bottom: 7px;     
+#IconpushButton:pressed{
+    background-color: #ef9a9a;
 }</string>
      </property>
      <property name="text">
