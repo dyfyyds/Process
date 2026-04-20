@@ -14,49 +14,44 @@ void StatsPanel::setupUI() {
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(14, 14, 14, 14);
     layout->setSpacing(7);
+    buildHeaderSection(layout);
+    layout->addWidget(createSeparator());
+    buildMetricsSection(layout);
+    layout->addWidget(createSeparator());
+    buildCountSection(layout);
+    buildFinishedTableSection(layout);
+    clear();
+}
 
+void StatsPanel::buildHeaderSection(QVBoxLayout* layout) {
     auto* title = new QLabel(QString::fromUtf8("📊 统计面板"), this);
     title->setStyleSheet(CyberStyle::sectionTitle());
     layout->addWidget(title);
 
-    QString statStyle = QString("color: %1; font-size: 11px; background: transparent; border: none;").arg(Cyber::TEXT_NEON);
-    QString valStyle = QString("color: %1; font-size: 12px; font-weight: bold; background: transparent; border: none;").arg(Cyber::GREEN);
-
     m_algoLabel = new QLabel(this);
-    m_algoLabel->setStyleSheet(QString("color: %1; font-size: 12px; font-weight: bold; "
+    m_algoLabel->setStyleSheet(QString(
+        "color: %1; font-size: 12px; font-weight: bold; "
         "background: transparent; border: none; padding: 4px; border-radius: 4px;")
         .arg(Cyber::MAGENTA));
     layout->addWidget(m_algoLabel);
 
-    m_tickLabel = new QLabel(this);
-    m_tickLabel->setStyleSheet(valStyle);
+    m_tickLabel = createValueLabel();
     layout->addWidget(m_tickLabel);
+}
 
-    // 分隔
-    auto* sep = new QLabel(this);
-    sep->setFixedHeight(1);
-    sep->setStyleSheet(QString("background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-        "stop:0 transparent, stop:0.5 %1, stop:1 transparent)").arg(Cyber::BORDER_LIT));
-    layout->addWidget(sep);
-
+void StatsPanel::buildMetricsSection(QVBoxLayout* layout) {
     auto* metricsTitle = new QLabel(QString::fromUtf8("⚡ 性能指标"), this);
     metricsTitle->setStyleSheet(CyberStyle::sectionTitle());
     layout->addWidget(metricsTitle);
 
-    m_waitLabel = new QLabel(this);
-    m_waitLabel->setStyleSheet(statStyle);
+    m_waitLabel = createStatLabel();
+    m_turnaroundLabel = createStatLabel();
+    m_responseLabel = createStatLabel();
+    m_cpuUtilLabel = createStatLabel();
+
     layout->addWidget(m_waitLabel);
-
-    m_turnaroundLabel = new QLabel(this);
-    m_turnaroundLabel->setStyleSheet(statStyle);
     layout->addWidget(m_turnaroundLabel);
-
-    m_responseLabel = new QLabel(this);
-    m_responseLabel->setStyleSheet(statStyle);
     layout->addWidget(m_responseLabel);
-
-    m_cpuUtilLabel = new QLabel(this);
-    m_cpuUtilLabel->setStyleSheet(statStyle);
     layout->addWidget(m_cpuUtilLabel);
 
     m_cpuBar = new QProgressBar(this);
@@ -64,23 +59,16 @@ void StatsPanel::setupUI() {
     m_cpuBar->setValue(0);
     m_cpuBar->setFixedHeight(18);
     layout->addWidget(m_cpuBar);
+}
 
-    // 分隔
-    auto* sep2 = new QLabel(this);
-    sep2->setFixedHeight(1);
-    sep2->setStyleSheet(QString("background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-        "stop:0 transparent, stop:0.5 %1, stop:1 transparent)").arg(Cyber::BORDER_LIT));
-    layout->addWidget(sep2);
-
-    m_readyCountLabel = new QLabel(this);
-    m_readyCountLabel->setStyleSheet(statStyle);
+void StatsPanel::buildCountSection(QVBoxLayout* layout) {
+    m_readyCountLabel = createStatLabel();
+    m_finishedCountLabel = createStatLabel();
     layout->addWidget(m_readyCountLabel);
-
-    m_finishedCountLabel = new QLabel(this);
-    m_finishedCountLabel->setStyleSheet(statStyle);
     layout->addWidget(m_finishedCountLabel);
+}
 
-    // 完成进程表
+void StatsPanel::buildFinishedTableSection(QVBoxLayout* layout) {
     auto* tableTitle = new QLabel(QString::fromUtf8("✅ 已完成进程"), this);
     tableTitle->setStyleSheet(CyberStyle::sectionTitle());
     layout->addWidget(tableTitle);
@@ -98,8 +86,47 @@ void StatsPanel::setupUI() {
     m_finishedTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_finishedTable->setSelectionMode(QAbstractItemView::NoSelection);
     layout->addWidget(m_finishedTable, 1);
+}
 
-    clear();
+void StatsPanel::updateFinishedTable(const std::vector<Process*>& finished) {
+    m_finishedTable->setRowCount(finished.size());
+    for(int i = 0; i < static_cast<int>(finished.size()); i++) {
+        auto* proc = finished[i];
+        auto* nameItem = new QTableWidgetItem(QString::fromStdString(proc->getName()));
+        nameItem->setForeground(proc->getColor());
+
+        m_finishedTable->setItem(i, 0, nameItem);
+        m_finishedTable->setItem(i, 1, new QTableWidgetItem(QString::number(proc->getTurnaroundTime())));
+        m_finishedTable->setItem(i, 2, new QTableWidgetItem(QString::number(proc->getWaitTime())));
+        m_finishedTable->setItem(i, 3, new QTableWidgetItem(QString::number(proc->getResponseTime())));
+    }
+    m_finishedTable->scrollToBottom();
+}
+
+QLabel* StatsPanel::createSeparator() {
+    auto* separator = new QLabel(this);
+    separator->setFixedHeight(1);
+    separator->setStyleSheet(QString(
+        "background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "stop:0 transparent, stop:0.5 %1, stop:1 transparent)")
+        .arg(Cyber::BORDER_LIT));
+    return separator;
+}
+
+QLabel* StatsPanel::createStatLabel() {
+    auto* label = new QLabel(this);
+    label->setStyleSheet(QString(
+        "color: %1; font-size: 11px; background: transparent; border: none;")
+        .arg(Cyber::TEXT_NEON));
+    return label;
+}
+
+QLabel* StatsPanel::createValueLabel() {
+    auto* label = new QLabel(this);
+    label->setStyleSheet(QString(
+        "color: %1; font-size: 12px; font-weight: bold; background: transparent; border: none;")
+        .arg(Cyber::GREEN));
+    return label;
 }
 
 void StatsPanel::updateStats(Scheduler* scheduler) {
@@ -119,19 +146,8 @@ void StatsPanel::updateStats(Scheduler* scheduler) {
     m_readyCountLabel->setText(QString::fromUtf8("就绪队列: %1 个进程").arg(scheduler->getReadyList().size()));
     m_finishedCountLabel->setText(QString::fromUtf8("已完成: %1 个进程").arg(scheduler->getFinishedList().size()));
 
-    // 更新完成表
     const auto& finished = scheduler->getFinishedList();
-    m_finishedTable->setRowCount(finished.size());
-    for(int i = 0; i < (int)finished.size(); i++) {
-        auto* proc = finished[i];
-        auto* nameItem = new QTableWidgetItem(QString::fromStdString(proc->getName()));
-        nameItem->setForeground(proc->getColor());
-        m_finishedTable->setItem(i, 0, nameItem);
-        m_finishedTable->setItem(i, 1, new QTableWidgetItem(QString::number(proc->getTurnaroundTime())));
-        m_finishedTable->setItem(i, 2, new QTableWidgetItem(QString::number(proc->getWaitTime())));
-        m_finishedTable->setItem(i, 3, new QTableWidgetItem(QString::number(proc->getResponseTime())));
-    }
-    m_finishedTable->scrollToBottom();
+    updateFinishedTable(finished);
 }
 
 void StatsPanel::clear() {

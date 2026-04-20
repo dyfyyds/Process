@@ -151,13 +151,7 @@ void CpuWidget::drawEnergyFlow(QPainter& p, const QRect& area) {
     }
 }
 
-void CpuWidget::paintEvent(QPaintEvent*) {
-    QPainter p(this);
-    p.setRenderHint(QPainter::Antialiasing);
-
-    QRect area = rect().adjusted(2, 2, -2, -2);
-
-    // 背景
+void CpuWidget::drawFrame(QPainter& p, const QRect& area) {
     p.setPen(Qt::NoPen);
     p.setBrush(QColor(Cyber::BG_PANEL));
     p.drawRoundedRect(area, 8, 8);
@@ -173,8 +167,9 @@ void CpuWidget::paintEvent(QPaintEvent*) {
     // 内边框
     p.setPen(QPen(borderColor.darker(180), 1));
     p.drawRoundedRect(area.adjusted(3,3,-3,-3), 6, 6);
+}
 
-    // 标题
+void CpuWidget::drawHeader(QPainter& p, const QRect& area) {
     p.setPen(QColor(Cyber::CYAN));
     QFont titleFont("Consolas", 11, QFont::Bold);
     p.setFont(titleFont);
@@ -187,71 +182,66 @@ void CpuWidget::paintEvent(QPaintEvent*) {
     p.setFont(tickFont);
     p.drawText(area.adjusted(0, 8, -15, 0), Qt::AlignRight | Qt::AlignTop,
                QString("TICK: %1").arg(m_tick));
+}
 
-    if(!m_process) {
-        // 空闲状态
-        p.setPen(QColor(Cyber::TEXT_DIM));
-        QFont idleFont("Consolas", 20, QFont::Bold);
-        p.setFont(idleFont);
-        QColor idleColor(Cyber::CYAN);
-        idleColor.setAlphaF(m_glowIntensity * 0.5);
-        p.setPen(idleColor);
-        p.drawText(area, Qt::AlignCenter, "CPU IDLE");
-    } else {
-        // 运行中进程信息
-        QColor procColor = m_process->getColor();
-        int centerY = area.center().y();
+void CpuWidget::drawIdleState(QPainter& p, const QRect& area) {
+    QFont idleFont("Consolas", 20, QFont::Bold);
+    QColor idleColor(Cyber::CYAN);
+    idleColor.setAlphaF(m_glowIntensity * 0.5);
 
-        // 进程名(大字)
-        QFont nameFont("Consolas", 22, QFont::Bold);
-        p.setFont(nameFont);
-        p.setPen(procColor);
-        p.drawText(area.adjusted(20, 30, 0, 0), Qt::AlignLeft | Qt::AlignTop,
-                   QString::fromStdString(m_process->getName()));
+    p.setFont(idleFont);
+    p.setPen(idleColor);
+    p.drawText(area, Qt::AlignCenter, "CPU IDLE");
+}
 
-        // 状态信息
-        QFont infoFont("Consolas", 12);
-        p.setFont(infoFont);
+void CpuWidget::drawProgressBar(QPainter& p, const QRect& area, const QColor& procColor) {
+    const int centerY = area.center().y();
+    const int barX = area.width() / 2;
+    const int barY = centerY + 5;
+    const int barW = area.width() / 2 - 30;
+    const int barH = 14;
+    const double progress = m_process->getNTime() > 0
+        ? static_cast<double>(m_process->getRTime()) / m_process->getNTime()
+        : 0.0;
 
-        int infoX = 20;
-        int infoY = centerY + 10;
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(Cyber::BG_DEEP));
+    p.drawRoundedRect(barX, barY, barW, barH, 4, 4);
 
-        p.setPen(QColor(Cyber::TEXT));
-        p.drawText(infoX, infoY, QString::fromUtf8("优先级: %1").arg(m_process->getPriority()));
-        p.drawText(infoX, infoY + 20, QString::fromUtf8("状态: 运行中"));
+    QLinearGradient grad(barX, 0, barX + barW * progress, 0);
+    grad.setColorAt(0, procColor.darker(150));
+    grad.setColorAt(1, procColor);
+    p.setBrush(grad);
+    p.drawRoundedRect(barX, barY, barW * progress, barH, 4, 4);
 
-        // 进度条
-        int barX = area.width() / 2;
-        int barY = centerY + 5;
-        int barW = area.width() / 2 - 30;
-        int barH = 14;
+    p.setPen(QColor(Cyber::TEXT_BRIGHT));
+    p.setFont(QFont("Consolas", 9, QFont::Bold));
+    p.drawText(QRect(barX, barY, barW, barH), Qt::AlignCenter,
+               QString("%1/%2").arg(m_process->getRTime()).arg(m_process->getNTime()));
 
-        p.setPen(Qt::NoPen);
-        p.setBrush(QColor(Cyber::BG_DEEP));
-        p.drawRoundedRect(barX, barY, barW, barH, 4, 4);
+    p.setPen(QColor(Cyber::TEXT_DIM));
+    p.drawText(barX, barY + barH + 16,
+               QString::fromUtf8("剩余: %1").arg(m_process->getRemainingTime()));
+}
 
-        double progress = 0;
-        if(m_process->getNTime() > 0)
-            progress = (double)m_process->getRTime() / m_process->getNTime();
+void CpuWidget::drawProcessInfo(QPainter& p, const QRect& area) {
+    const QColor procColor = m_process->getColor();
+    const int centerY = area.center().y();
 
-        QLinearGradient grad(barX, 0, barX + barW * progress, 0);
-        grad.setColorAt(0, procColor.darker(150));
-        grad.setColorAt(1, procColor);
-        p.setBrush(grad);
-        p.drawRoundedRect(barX, barY, barW * progress, barH, 4, 4);
+    p.setFont(QFont("Consolas", 22, QFont::Bold));
+    p.setPen(procColor);
+    p.drawText(area.adjusted(20, 30, 0, 0), Qt::AlignLeft | Qt::AlignTop,
+               QString::fromStdString(m_process->getName()));
 
-        p.setPen(QColor(Cyber::TEXT_BRIGHT));
-        QFont barFont("Consolas", 9, QFont::Bold);
-        p.setFont(barFont);
-        p.drawText(QRect(barX, barY, barW, barH), Qt::AlignCenter,
-                   QString("%1/%2").arg(m_process->getRTime()).arg(m_process->getNTime()));
+    p.setFont(QFont("Consolas", 12));
+    p.setPen(QColor(Cyber::TEXT));
+    p.drawText(20, centerY + 10, QString::fromUtf8("优先级: %1").arg(m_process->getPriority()));
+    p.drawText(20, centerY + 30, QString::fromUtf8("状态: 运行中"));
 
-        // 剩余时间
-        p.setPen(QColor(Cyber::TEXT_DIM));
-        p.drawText(barX, barY + barH + 16, QString::fromUtf8("剩余: %1").arg(m_process->getRemainingTime()));
-    }
+    drawProgressBar(p, area, procColor);
+}
 
-    // 扫描线效果
+void CpuWidget::drawScanOverlay(QPainter& p, const QRect& area) {
     int scanY = area.y() + (area.height() * m_scanLinePos);
     QLinearGradient scanGrad(0, scanY - 8, 0, scanY + 8);
     scanGrad.setColorAt(0, Qt::transparent);
@@ -266,4 +256,22 @@ void CpuWidget::paintEvent(QPaintEvent*) {
     clipPath.addRoundedRect(area.adjusted(1,1,-1,-1), 8, 8);
     p.setClipPath(clipPath);
     p.drawRect(area.x(), scanY - 8, area.width(), 16);
+    p.setClipping(false);
+}
+
+void CpuWidget::paintEvent(QPaintEvent*) {
+    QPainter p(this);
+    p.setRenderHint(QPainter::Antialiasing);
+
+    const QRect area = rect().adjusted(2, 2, -2, -2);
+    drawFrame(p, area);
+    drawHeader(p, area);
+
+    if(m_process) {
+        drawProcessInfo(p, area);
+    } else {
+        drawIdleState(p, area);
+    }
+
+    drawScanOverlay(p, area);
 }

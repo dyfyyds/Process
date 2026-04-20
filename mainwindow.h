@@ -15,6 +15,10 @@
 #include "StatsPanel.h"
 #include "ExplanationBar.h"
 
+class QWidget;
+class QHBoxLayout;
+class QPushButton;
+
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
@@ -29,6 +33,11 @@ protected:
 
 private:
     void setupUI();
+    void applyWindowChrome();
+    QWidget* createTitleBar(QWidget* parent);
+    QHBoxLayout* createBodyLayout(QWidget* parent);
+    QHBoxLayout* createBottomLayout(QWidget* parent);
+    QPushButton* createWindowButton(const QString& iconPath, const QString& hoverStyle, QWidget* parent);
     void connectSignals();
     void onAddProcess();
     void onRandomGenerate();
@@ -40,6 +49,11 @@ private:
     void onSpeedChanged(int ms);
     void refreshUI();
     void executeStep();
+    bool isExecutionComplete() const;
+    void handleExecutionComplete();
+    void updateExecutionViews(const StepResult& result);
+    void updateStepControls();
+    void rebuildProcessesForAlgorithmChange();
 
     std::shared_ptr<Scheduler> m_scheduler;
     QTimer* m_timer;

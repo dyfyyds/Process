@@ -32,11 +32,7 @@ void GanttWidget::clear() {
     update();
 }
 
-void GanttWidget::paintEvent(QPaintEvent*) {
-    QPainter p(this);
-    p.setRenderHint(QPainter::Antialiasing);
-
-    // 背景渐变
+void GanttWidget::drawBackground(QPainter& p) {
     QLinearGradient bgGrad(rect().topLeft(), rect().bottomLeft());
     bgGrad.setColorAt(0, QColor(Cyber::BG_PANEL));
     bgGrad.setColorAt(1, QColor(Cyber::BG_DEEP));
@@ -52,79 +48,72 @@ void GanttWidget::paintEvent(QPaintEvent*) {
         p.setBrush(Qt::NoBrush);
         p.drawRoundedRect(rect().adjusted(i, i, -i, -i), 8 - i*0.5, 8 - i*0.5);
     }
+}
 
-    // 标题
+void GanttWidget::drawTitle(QPainter& p) {
     p.setPen(QColor(Cyber::CYAN));
     QFont titleFont("Consolas", 12, QFont::Bold);
     p.setFont(titleFont);
     p.drawText(15, 25, QString::fromUtf8("⚡ 甘特图 (Gantt Chart)"));
+}
 
-    if(m_data.empty()) {
-        p.setPen(QColor(Cyber::TEXT_DIM));
-        QFont emptyFont("Consolas", 13);
-        p.setFont(emptyFont);
-        p.drawText(rect(), Qt::AlignCenter, QString::fromUtf8("暂无执行记录"));
-        return;
-    }
+void GanttWidget::drawEmptyState(QPainter& p) {
+    p.setPen(QColor(Cyber::TEXT_DIM));
+    p.setFont(QFont("Consolas", 13));
+    p.drawText(rect(), Qt::AlignCenter, QString::fromUtf8("暂无执行记录"));
+}
 
-    int offsetX = 20;
-    int offsetY = 40;
-    int barHeight = m_cellHeight;
-
-    // 背景网格
+void GanttWidget::drawGrid(QPainter& p, int offsetX, int offsetY, int barHeight) {
     p.setPen(QPen(QColor(Cyber::BORDER), 1, Qt::DotLine));
     for(int t = 0; t <= m_currentTick + 2; t++) {
         int x = offsetX + t * m_cellWidth;
         p.drawLine(x, offsetY, x, offsetY + barHeight + 20);
     }
+}
 
-    // 时间轴刻度
-    QFont tickFont("Consolas", 9);
-    p.setFont(tickFont);
+void GanttWidget::drawTimeline(QPainter& p, int offsetX, int offsetY, int barHeight) {
+    p.setFont(QFont("Consolas", 9));
     p.setPen(QColor(Cyber::CYAN_DARK));
-
     for(int t = 0; t <= m_currentTick; t++) {
         int x = offsetX + t * m_cellWidth;
         p.drawText(x - 5, offsetY + barHeight + 18, QString::number(t));
     }
+}
 
-    // 绘制甘特图块 - 带霓虹轨迹效果
-    for(const auto& entry : m_data) {
-        int x1 = offsetX + entry.startTick * m_cellWidth;
-        int x2 = offsetX + entry.endTick * m_cellWidth;
-        int w = x2 - x1;
+void GanttWidget::drawEntry(QPainter& p, const GanttEntry& entry, int offsetX, int offsetY, int barHeight) {
+    const int x1 = offsetX + entry.startTick * m_cellWidth;
+    const int x2 = offsetX + entry.endTick * m_cellWidth;
+    const int width = x2 - x1;
 
-        // 霓虹发光效果
-        for(int i = 0; i < 3; i++) {
-            QColor glowColor = entry.color;
-            glowColor.setAlphaF((0.25 - i*0.08));
-            p.setPen(Qt::NoPen);
-            p.setBrush(glowColor);
-            p.drawRoundedRect(x1 + i, offsetY + 4 - i, w - i*2, barHeight - 8 + i*2, 4 - i*0.5, 4 - i*0.5);
-        }
-
-        // 主体彩色块
-        QLinearGradient blockGrad(x1, offsetY, x2, offsetY);
-        blockGrad.setColorAt(0, entry.color.darker(120));
-        blockGrad.setColorAt(0.5, entry.color);
-        blockGrad.setColorAt(1, entry.color.lighter(130));
-        p.setBrush(blockGrad);
-        p.drawRoundedRect(x1 + 2, offsetY + 4, w - 4, barHeight - 8, 4, 4);
-
-        // 进程名标签
-        if(w > 25) {
-            p.setPen(QColor(Cyber::TEXT_BRIGHT));
-            QFont labelFont("Consolas", 9, QFont::Bold);
-            p.setFont(labelFont);
-            p.drawText(QRect(x1 + 3, offsetY + 4, w - 6, barHeight - 8),
-                       Qt::AlignCenter, entry.name);
-        }
+    for(int i = 0; i < 3; i++) {
+        QColor glowColor = entry.color;
+        glowColor.setAlphaF(0.25 - i*0.08);
+        p.setPen(Qt::NoPen);
+        p.setBrush(glowColor);
+        p.drawRoundedRect(x1 + i, offsetY + 4 - i, width - i*2, barHeight - 8 + i*2, 4 - i*0.5, 4 - i*0.5);
     }
 
-    // 当前 tick 标记线 - 带扫描效果
-    int curX = offsetX + m_currentTick * m_cellWidth;
-    
-    // 扫描线
+    QLinearGradient blockGrad(x1, offsetY, x2, offsetY);
+    blockGrad.setColorAt(0, entry.color.darker(120));
+    blockGrad.setColorAt(0.5, entry.color);
+    blockGrad.setColorAt(1, entry.color.lighter(130));
+    p.setBrush(blockGrad);
+    p.drawRoundedRect(x1 + 2, offsetY + 4, width - 4, barHeight - 8, 4, 4);
+
+    if(width > 25) {
+        p.setPen(QColor(Cyber::TEXT_BRIGHT));
+        p.setFont(QFont("Consolas", 9, QFont::Bold));
+        p.drawText(QRect(x1 + 3, offsetY + 4, width - 6, barHeight - 8), Qt::AlignCenter, entry.name);
+    }
+}
+
+void GanttWidget::drawEntries(QPainter& p, int offsetX, int offsetY, int barHeight) {
+    for(const auto& entry : m_data) {
+        drawEntry(p, entry, offsetX, offsetY, barHeight);
+    }
+}
+
+void GanttWidget::drawScanOverlay(QPainter& p) {
     int scanX = rect().x() + static_cast<int>(rect().width() * m_scanLineX);
     QLinearGradient scanGrad(scanX - 30, 0, scanX + 30, 0);
     scanGrad.setColorAt(0, Qt::transparent);
@@ -135,8 +124,10 @@ void GanttWidget::paintEvent(QPaintEvent*) {
     p.setPen(Qt::NoPen);
     p.setBrush(scanGrad);
     p.drawRect(rect());
+}
 
-    // 当前 tick 发光线
+void GanttWidget::drawCurrentTickMarker(QPainter& p, int offsetX, int offsetY, int barHeight) {
+    const int curX = offsetX + m_currentTick * m_cellWidth;
     QColor cursorGlow = QColor(Cyber::CYAN);
     cursorGlow.setAlphaF(0.4);
     p.setPen(QPen(cursorGlow, 4));
@@ -154,4 +145,26 @@ void GanttWidget::paintEvent(QPaintEvent*) {
     p.setBrush(QColor(Cyber::CYAN));
     p.setPen(Qt::NoPen);
     p.drawPath(triangle);
+}
+
+void GanttWidget::paintEvent(QPaintEvent*) {
+    QPainter p(this);
+    p.setRenderHint(QPainter::Antialiasing);
+
+    drawBackground(p);
+    drawTitle(p);
+    if(m_data.empty()) {
+        drawEmptyState(p);
+        return;
+    }
+
+    const int offsetX = 20;
+    const int offsetY = 40;
+    const int barHeight = m_cellHeight;
+
+    drawGrid(p, offsetX, offsetY, barHeight);
+    drawTimeline(p, offsetX, offsetY, barHeight);
+    drawEntries(p, offsetX, offsetY, barHeight);
+    drawScanOverlay(p);
+    drawCurrentTickMarker(p, offsetX, offsetY, barHeight);
 }

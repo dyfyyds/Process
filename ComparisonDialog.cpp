@@ -3,6 +3,54 @@
 #include <QHeaderView>
 #include <QLabel>
 
+namespace {
+struct AlgoInfo {
+    Algorithm algo;
+    QString name;
+    int quantum;
+};
+
+std::vector<AlgoInfo> algorithmsToCompare() {
+    return {
+        {Algorithm::FCFS, QString::fromUtf8("先来先服务 (FCFS)"), 0},
+        {Algorithm::SJF, QString::fromUtf8("短作业优先 (SJF)"), 0},
+        {Algorithm::Priority, QString::fromUtf8("优先级调度"), 0},
+        {Algorithm::RoundRobin, QString::fromUtf8("时间片轮转 (RR, q=2)"), 2},
+        {Algorithm::MLFQ, QString::fromUtf8("多级反馈队列 (MLFQ)"), 0},
+    };
+}
+
+void populateMetricsRow(QTableWidget* table, int row, const QString& name, const Scheduler& scheduler) {
+    table->setItem(row, 0, new QTableWidgetItem(name));
+    table->setItem(row, 1, new QTableWidgetItem(QString::number(scheduler.avgWaitingTime(), 'f', 2)));
+    table->setItem(row, 2, new QTableWidgetItem(QString::number(scheduler.avgTurnaroundTime(), 'f', 2)));
+    table->setItem(row, 3, new QTableWidgetItem(QString::number(scheduler.avgResponseTime(), 'f', 2)));
+    table->setItem(row, 4, new QTableWidgetItem(QString::number(scheduler.cpuUtilization(), 'f', 1) + "%"));
+
+    for(int col = 1; col <= 4; col++) {
+        if(auto* item = table->item(row, col)) item->setForeground(QColor(Cyber::TEXT));
+    }
+    if(auto* nameItem = table->item(row, 0)) nameItem->setForeground(QColor(Cyber::CYAN));
+}
+
+void highlightBestColumn(QTableWidget* table, int col, bool higherIsBetter) {
+    double bestVal = higherIsBetter ? -1.0 : 1e9;
+    int bestRow = -1;
+
+    for(int row = 0; row < table->rowCount(); row++) {
+        QString text = table->item(row, col)->text();
+        double val = higherIsBetter ? text.remove('%').toDouble() : text.toDouble();
+        const bool isBetter = higherIsBetter ? val > bestVal : val < bestVal;
+        if(isBetter) {
+            bestVal = val;
+            bestRow = row;
+        }
+    }
+
+    if(bestRow >= 0) table->item(bestRow, col)->setForeground(QColor(Cyber::GREEN));
+}
+}
+
 ComparisonDialog::ComparisonDialog(const std::vector<Process*>& processes, QWidget* parent)
     : QDialog(parent)
 {
@@ -44,80 +92,32 @@ ComparisonDialog::ComparisonDialog(const std::vector<Process*>& processes, QWidg
 }
 
 void ComparisonDialog::runComparison(const std::vector<Process*>& processes) {
-    struct AlgoInfo {
-        Algorithm algo;
-        QString name;
-        int quantum;
-    };
-
-    std::vector<AlgoInfo> algos = {
-        {Algorithm::FCFS, QString::fromUtf8("先来先服务 (FCFS)"), 0},
-        {Algorithm::SJF, QString::fromUtf8("短作业优先 (SJF)"), 0},
-        {Algorithm::Priority, QString::fromUtf8("优先级调度"), 0},
-        {Algorithm::RoundRobin, QString::fromUtf8("时间片轮转 (RR, q=2)"), 2},
-        {Algorithm::MLFQ, QString::fromUtf8("多级反馈队列 (MLFQ)"), 0},
-    };
-
+    const auto algos = algorithmsToCompare();
     m_table->setRowCount(algos.size());
 
-    for(int i = 0; i < (int)algos.size(); i++) {
+    for(int i = 0; i < static_cast<int>(algos.size()); i++) {
         Scheduler scheduler;
         scheduler.setStrategy(algos[i].algo);
-        if(algos[i].quantum > 0)
+        if(algos[i].quantum > 0) {
             scheduler.setTimeQuantum(algos[i].quantum);
+        }
 
-        // 克隆所有进程
         for(auto* p : processes) {
             Process* clone = p->clone();
             scheduler.addProcess(clone);
         }
 
-        // 运行到完成
         int maxSteps = 10000;
-        while(!scheduler.getReadyList().empty() && maxSteps-- > 0) {
+        while(scheduler.getFinishedList().size() < scheduler.getAllProcesses().size()
+              && maxSteps-- > 0) {
             scheduler.stepRun();
         }
 
-        // 填表
-        m_table->setItem(i, 0, new QTableWidgetItem(algos[i].name));
-        m_table->setItem(i, 1, new QTableWidgetItem(
-            QString::number(scheduler.avgWaitingTime(), 'f', 2)));
-        m_table->setItem(i, 2, new QTableWidgetItem(
-            QString::number(scheduler.avgTurnaroundTime(), 'f', 2)));
-        m_table->setItem(i, 3, new QTableWidgetItem(
-            QString::number(scheduler.avgResponseTime(), 'f', 2)));
-        m_table->setItem(i, 4, new QTableWidgetItem(
-            QString::number(scheduler.cpuUtilization(), 'f', 1) + "%"));
-
-        // 高亮最优值
-        for(int col = 1; col <= 4; col++) {
-            auto* item = m_table->item(i, col);
-            if(item) item->setForeground(QColor(Cyber::TEXT));
-        }
-        auto* nameItem = m_table->item(i, 0);
-        if(nameItem) nameItem->setForeground(QColor(Cyber::CYAN));
+        populateMetricsRow(m_table, i, algos[i].name, scheduler);
     }
 
-    // 找出各列最优值并高亮
     for(int col = 1; col <= 3; col++) {
-        double bestVal = 1e9;
-        int bestRow = -1;
-        for(int row = 0; row < m_table->rowCount(); row++) {
-            double val = m_table->item(row, col)->text().toDouble();
-            if(val < bestVal) { bestVal = val; bestRow = row; }
-        }
-        if(bestRow >= 0)
-            m_table->item(bestRow, col)->setForeground(QColor(Cyber::GREEN));
+        highlightBestColumn(m_table, col, false);
     }
-    // CPU利用率最高最优
-    {
-        double bestVal = -1;
-        int bestRow = -1;
-        for(int row = 0; row < m_table->rowCount(); row++) {
-            double val = m_table->item(row, 4)->text().remove('%').toDouble();
-            if(val > bestVal) { bestVal = val; bestRow = row; }
-        }
-        if(bestRow >= 0)
-            m_table->item(bestRow, 4)->setForeground(QColor(Cyber::GREEN));
-    }
+    highlightBestColumn(m_table, 4, true);
 }

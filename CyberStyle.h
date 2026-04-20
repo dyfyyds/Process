@@ -4,34 +4,78 @@
 #include <QString>
 #include <QColor>
 
+/**
+ * @namespace Cyber
+ * @brief 赛博朋克风格主题的颜色常量定义
+ *
+ * 定义了赛博朋克风格UI所需的所有颜色常量，采用深蓝黑色调配合霓虹色点缀
+ * 颜色命名规范：
+ * - BG_ 开头：背景色
+ * - BORDER_ 开头：边框色
+ * - 基本颜色：CYAN(青色)、BLUE(蓝色)、GREEN(绿色)、MAGENTA(洋红)、ORANGE(橙色)、RED(红色)、YELLOW(黄色)、PURPLE(紫色)
+ * - TEXT_ 开头：文本颜色
+ * - _DARK 后缀：深色变体
+ */
 namespace Cyber {
-    constexpr auto BG_DEEP    = "#050810";
-    constexpr auto BG_PANEL   = "#0a1020";
-    constexpr auto BG_CARD    = "#0d1525";
-    constexpr auto BORDER     = "#1a2744";
-    constexpr auto BORDER_LIT = "#3a5f8f";
-    constexpr auto CYAN       = "#00ffff";
-    constexpr auto CYAN_DARK  = "#00aaaa";
-    constexpr auto BLUE       = "#1e90ff";
-    constexpr auto BLUE_DARK  = "#1060a0";
-    constexpr auto GREEN      = "#00ff88";
-    constexpr auto GREEN_DARK = "#00aa55";
-    constexpr auto MAGENTA    = "#ff00ff";
-    constexpr auto MAGENTA_DARK = "#aa00aa";
-    constexpr auto ORANGE     = "#ff8800";
-    constexpr auto ORANGE_DARK = "#aa5500";
-    constexpr auto RED        = "#ff3366";
-    constexpr auto RED_DARK   = "#aa2244";
-    constexpr auto YELLOW     = "#ffff00";
-    constexpr auto PURPLE     = "#aa00ff";
-    constexpr auto TEXT       = "#b0c0d0";
-    constexpr auto TEXT_DIM   = "#405060";
-    constexpr auto TEXT_BRIGHT= "#ffffff";
-    constexpr auto TEXT_NEON  = "#e0f8ff";
+    constexpr auto BG_DEEP    = "#050810";      // 最深层背景色，用于主窗口背景
+    constexpr auto BG_PANEL   = "#0a1020";      // 面板背景色，用于控制面板等
+    constexpr auto BG_CARD    = "#0d1525";      // 卡片背景色，用于卡片式UI元素
+    constexpr auto BORDER     = "#1a2744";      // 标准边框色
+    constexpr auto BORDER_LIT = "#3a5f8f";      // 高亮边框色，用于焦点状态
+    constexpr auto CYAN       = "#00ffff";      // 主青色，赛博朋克标志性颜色
+    constexpr auto CYAN_DARK  = "#00aaaa";      // 深青色，用于阴影或禁用状态
+    constexpr auto BLUE       = "#1e90ff";      // 亮蓝色，用于选中状态
+    constexpr auto BLUE_DARK  = "#1060a0";      // 深蓝色
+    constexpr auto GREEN      = "#00ff88";      // 荧光绿，用于成功状态
+    constexpr auto GREEN_DARK = "#00aa55";      // 深绿色
+    constexpr auto MAGENTA    = "#ff00ff";      // 洋红色，用于警告状态
+    constexpr auto MAGENTA_DARK = "#aa00aa";    // 深洋红色
+    constexpr auto ORANGE     = "#ff8800";      // 橙色，用于重要操作
+    constexpr auto ORANGE_DARK = "#aa5500";     // 深橙色
+    constexpr auto RED        = "#ff3366";      // 红色，用于危险操作
+    constexpr auto RED_DARK   = "#aa2244";      // 深红色
+    constexpr auto YELLOW     = "#ffff00";      // 黄色
+    constexpr auto PURPLE     = "#aa00ff";      // 紫色
+    constexpr auto TEXT       = "#b0c0d0";      // 主要文本颜色
+    constexpr auto TEXT_DIM   = "#405060";      // 暗淡文本，用于次要信息
+    constexpr auto TEXT_BRIGHT= "#ffffff";      // 明亮文本，用于高亮显示
+    constexpr auto TEXT_NEON  = "#e0f8ff";      // 霓虹文本，用于标题或强调
 }
 
+/**
+ * @class CyberStyle
+ * @brief 赛博朋克风格UI主题样式类
+ *
+ * 提供赛博朋克风格的Qt UI样式，包括全局样式表和各种预定义样式
+ * 该类使用静态方法，无需实例化即可使用
+ *
+ * 使用示例：
+ * @code
+ * // 应用全局样式
+ * qApp->setStyleSheet(CyberStyle::globalStyleSheet());
+ *
+ * // 使用特定样式
+ * QString buttonStyle = CyberStyle::accentButton();
+ * @endcode
+ */
 class CyberStyle {
 public:
+    /**
+     * @brief 获取全局样式表
+     *
+     * 返回完整的赛博朋克风格样式表，包含所有标准Qt控件的样式定义
+     * 适用于整个应用程序的样式设置
+     *
+     * 样式特点：
+     * - 深色背景配合霓虹色点缀
+     * - 统一的圆角设计
+     * - 悬停和按下状态的动画效果
+     * - 自定义滚动条和滑块样式
+     *
+     * @return 完整的样式表字符串
+     *
+     * @note 建议使用 qApp->setStyleSheet(CyberStyle::globalStyleSheet()) 设置应用全局样式
+     */
     static QString globalStyleSheet() {
         return QString(R"(
             * {
@@ -219,6 +263,22 @@ public:
         .arg(Cyber::BLUE);        // %8
     }
 
+    /**
+     * @brief 获取面板样式
+     *
+     * 返回面板控件的渐变背景样式，通常用于分组框、面板等容器控件
+     * 采用从上到下的渐变效果，增强视觉层次感
+     *
+     * 样式效果：
+     * - 顶部：BG_PANEL颜色
+     * - 底部：BG_DEEP颜色
+     * - 边框：BORDER_LIT颜色
+     * - 圆角：8px
+     *
+     * @return 面板样式字符串
+     *
+     * @note 适用于 QGroupBox、QFrame 等容器控件
+     */
     static QString panelStyle() {
         return QString("background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
                       "stop:0 %1, stop:1 %2); "
@@ -226,6 +286,22 @@ public:
             .arg(Cyber::BG_PANEL).arg(Cyber::BG_DEEP).arg(Cyber::BORDER_LIT);
     }
 
+    /**
+     * @brief 获取霓虹标题样式
+     *
+     * 返回赛博朋克风格的标题样式，使用霓虹青色
+     * 适用于主标题或重要标题文本
+     *
+     * 样式特点：
+     * - 颜色：霓虹青色 (CYAN)
+     * - 字体大小：18px
+     * - 字体粗细：粗体
+     * - 透明背景
+     *
+     * @return 霓虹标题样式字符串
+     *
+     * @note 适用于 QLabel 作为标题使用
+     */
     static QString neonTitle() {
         return QString("color: %1; font-size: 18px; font-weight: bold; "
                       "background: transparent; border: none; "
@@ -233,6 +309,22 @@ public:
             .arg(Cyber::CYAN);
     }
 
+    /**
+     * @brief 获取分区标题样式
+     *
+     * 返回分区标题的样式，带有左侧边框装饰
+     * 适用于分组标题或分区标题
+     *
+     * 样式特点：
+     * - 颜色：霓虹青色 (CYAN)
+     * - 字体大小：13px
+     * - 字体粗细：粗体
+     * - 左侧边框：3px实线
+     *
+     * @return 分区标题样式字符串
+     *
+     * @note 适用于 QLabel 作为分区标题使用
+     */
     static QString sectionTitle() {
         return QString("color: %1; font-size: 13px; font-weight: bold; "
                       "background: transparent; border: none; "
@@ -241,6 +333,21 @@ public:
             .arg(Cyber::CYAN);
     }
 
+    /**
+     * @brief 获取强调按钮样式
+     *
+     * 返回赛博朋克风格的强调按钮样式，使用霓虹青色
+     * 适用于主要操作按钮或需要突出显示的按钮
+     *
+     * 样式特点：
+     * - 默认状态：半透明青色渐变背景
+     * - 悬停状态：增加光晕效果
+     * - 按下状态：背景变为实色
+     *
+     * @return 强调按钮样式字符串
+     *
+     * @note 用于主要操作按钮，如"确认"、"开始"等
+     */
     static QString accentButton() {
         return QString(
             "QPushButton { "
@@ -249,7 +356,7 @@ public:
             "}"
             "QPushButton:hover { "
             "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgba(0,255,255,0.2), stop:1 rgba(0,255,255,0.35)); "
-            "  border-color: %1; box-shadow: 0 0 8px rgba(0,255,255,0.4); "
+            "  border-color: %1; "
             "}"
             "QPushButton:pressed { "
             "  background: rgba(0,255,255,0.4); border-color: %1; "
@@ -257,6 +364,20 @@ public:
         ).arg(Cyber::CYAN);
     }
 
+    /**
+     * @brief 获取绿色按钮样式
+     *
+     * 返回绿色主题的按钮样式
+     * 适用于成功、确认等正面操作
+     *
+     * 样式特点：
+     * - 使用荧光绿色 (GREEN)
+     * - 带有渐变和悬停效果
+     *
+     * @return 绿色按钮样式字符串
+     *
+     * @note 适用于成功操作，如"保存"、"应用"等
+     */
     static QString greenButton() {
         return QString(
             "QPushButton { "
@@ -265,7 +386,7 @@ public:
             "}"
             "QPushButton:hover { "
             "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgba(0,255,136,0.2), stop:1 rgba(0,255,136,0.35)); "
-            "  border-color: %1; box-shadow: 0 0 8px rgba(0,255,136,0.4); "
+            "  border-color: %1; "
             "}"
             "QPushButton:pressed { "
             "  background: rgba(0,255,136,0.4); border-color: %1; "
@@ -273,6 +394,20 @@ public:
         ).arg(Cyber::GREEN);
     }
 
+    /**
+     * @brief 获取红色按钮样式
+     *
+     * 返回红色主题的按钮样式
+     * 适用于危险、删除等负面操作
+     *
+     * 样式特点：
+     * - 使用红色 (RED)
+     * - 带有渐变和悬停效果
+     *
+     * @return 红色按钮样式字符串
+     *
+     * @note 适用于危险操作，如"删除"、"取消"等
+     */
     static QString redButton() {
         return QString(
             "QPushButton { "
@@ -281,7 +416,7 @@ public:
             "}"
             "QPushButton:hover { "
             "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgba(255,51,102,0.2), stop:1 rgba(255,51,102,0.35)); "
-            "  border-color: %1; box-shadow: 0 0 8px rgba(255,51,102,0.4); "
+            "  border-color: %1; "
             "}"
             "QPushButton:pressed { "
             "  background: rgba(255,51,102,0.4); border-color: %1; "
@@ -289,6 +424,20 @@ public:
         ).arg(Cyber::RED);
     }
 
+    /**
+     * @brief 获取橙色按钮样式
+     *
+     * 返回橙色主题的按钮样式
+     * 适用于警告、重要操作
+     *
+     * 样式特点：
+     * - 使用橙色 (ORANGE)
+     * - 带有渐变和悬停效果
+     *
+     * @return 橙色按钮样式字符串
+     *
+     * @note 适用于重要操作，如"警告"、"重要操作"等
+     */
     static QString orangeButton() {
         return QString(
             "QPushButton { "
@@ -297,7 +446,7 @@ public:
             "}"
             "QPushButton:hover { "
             "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgba(255,136,0,0.2), stop:1 rgba(255,136,0,0.35)); "
-            "  border-color: %1; box-shadow: 0 0 8px rgba(255,136,0,0.4); "
+            "  border-color: %1; "
             "}"
             "QPushButton:pressed { "
             "  background: rgba(255,136,0,0.4); border-color: %1; "
@@ -305,6 +454,20 @@ public:
         ).arg(Cyber::ORANGE);
     }
 
+    /**
+     * @brief 获取洋红色按钮样式
+     *
+     * 返回洋红色主题的按钮样式
+     * 适用于特殊、魔法般的操作
+     *
+     * 样式特点：
+     * - 使用洋红色 (MAGENTA)
+     * - 带有渐变和悬停效果
+     *
+     * @return 洋红色按钮样式字符串
+     *
+     * @note 适用于特殊操作，如"魔法"、"特殊功能"等
+     */
     static QString magentaButton() {
         return QString(
             "QPushButton { "
@@ -313,7 +476,7 @@ public:
             "}"
             "QPushButton:hover { "
             "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgba(255,0,255,0.2), stop:1 rgba(255,0,255,0.35)); "
-            "  border-color: %1; box-shadow: 0 0 8px rgba(255,0,255,0.4); "
+            "  border-color: %1; "
             "}"
             "QPushButton:pressed { "
             "  background: rgba(255,0,255,0.4); border-color: %1; "
@@ -321,6 +484,21 @@ public:
         ).arg(Cyber::MAGENTA);
     }
 
+    /**
+     * @brief 获取全息卡片样式
+     *
+     * 返回全息效果的卡片样式
+     * 适用于卡片式UI元素，如设置卡片、信息卡片等
+     *
+     * 样式特点：
+     * - 半透明渐变背景
+     * - 高亮边框
+     * - 圆角设计
+     *
+     * @return 全息卡片样式字符串
+     *
+     * @note 适用于 QWidget、QFrame 等作为卡片容器使用
+     */
     static QString holographicCard() {
         return QString(
             "background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "

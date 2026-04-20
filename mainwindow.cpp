@@ -21,12 +21,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     setupUI();
     connectSignals();
-
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowMinimizeButtonHint);
-    setAttribute(Qt::WA_TranslucentBackground);
-    setWindowIcon(QIcon(":/icon/process.png"));
-    setMinimumSize(1100, 750);
-    resize(1200, 800);
+    applyWindowChrome();
 }
 
 MainWindow::~MainWindow() {}
@@ -41,15 +36,38 @@ void MainWindow::setupUI() {
     auto* rootLayout = new QVBoxLayout(central);
     rootLayout->setContentsMargins(0, 0, 0, 0);
     rootLayout->setSpacing(0);
+    rootLayout->addWidget(createTitleBar(central));
+    rootLayout->addLayout(createBodyLayout(central), 1);
+    rootLayout->addLayout(createBottomLayout(central));
+}
 
-    // === 标题栏 ===
-    auto* titleBar = new QWidget(central);
+void MainWindow::applyWindowChrome() {
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowMinimizeButtonHint);
+    setAttribute(Qt::WA_TranslucentBackground);
+    setWindowIcon(QIcon(":/icon/process.png"));
+    setMinimumSize(1100, 750);
+    resize(1200, 800);
+}
+
+QPushButton* MainWindow::createWindowButton(const QString& iconPath, const QString& hoverStyle, QWidget* parent) {
+    auto* button = new QPushButton(parent);
+    button->setIcon(QIcon(iconPath));
+    button->setIconSize(QSize(18, 18));
+    button->setFixedSize(35, 35);
+    button->setStyleSheet(QString(
+        "QPushButton { border: none; background: transparent; border-radius: 4px; }")
+        + hoverStyle);
+    return button;
+}
+
+QWidget* MainWindow::createTitleBar(QWidget* parent) {
+    auto* titleBar = new QWidget(parent);
     titleBar->setFixedHeight(50);
     titleBar->setStyleSheet(QString(
         "background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-        "stop:0 %1, stop:1 %2); "
-        "border-bottom: 1px solid %3;")
+        "stop:0 %1, stop:1 %2); border-bottom: 1px solid %3;")
         .arg(Cyber::BG_DEEP).arg(Cyber::BG_PANEL).arg(Cyber::BORDER_LIT));
+
     auto* titleLayout = new QHBoxLayout(titleBar);
     titleLayout->setContentsMargins(15, 5, 10, 5);
 
@@ -62,82 +80,64 @@ void MainWindow::setupUI() {
 
     auto* titleLabel = new QLabel(QString::fromUtf8("⚡ 进程调度仿真系统"), titleBar);
     titleLabel->setStyleSheet(CyberStyle::neonTitle());
-    titleLayout->addWidget(titleLabel);
-
-    // 标题发光效果
     auto* titleGlow = new QGraphicsDropShadowEffect;
     titleGlow->setColor(QColor(Cyber::CYAN));
     titleGlow->setBlurRadius(25);
     titleGlow->setOffset(0, 0);
     titleLabel->setGraphicsEffect(titleGlow);
-
+    titleLayout->addWidget(titleLabel);
     titleLayout->addStretch();
 
-    auto* miniBtn = new QPushButton(titleBar);
-    miniBtn->setIcon(QIcon(":/icon/mini.png"));
-    miniBtn->setIconSize(QSize(18, 18));
-    miniBtn->setFixedSize(35, 35);
-    miniBtn->setStyleSheet(
-        "QPushButton { border: none; background: transparent; border-radius: 4px; }"
-        "QPushButton:hover { background-color: rgba(0,255,255,0.15); }");
+    auto* miniBtn = createWindowButton(":/icon/mini.png",
+        "QPushButton:hover { background-color: rgba(0,255,255,0.15); }", titleBar);
     connect(miniBtn, &QPushButton::clicked, this, &QMainWindow::showMinimized);
     titleLayout->addWidget(miniBtn);
 
-    auto* closeBtn = new QPushButton(titleBar);
-    closeBtn->setIcon(QIcon(":/icon/close.png"));
-    closeBtn->setIconSize(QSize(18, 18));
-    closeBtn->setFixedSize(35, 35);
-    closeBtn->setStyleSheet(
-        "QPushButton { border: none; background: transparent; border-radius: 4px; }"
-        "QPushButton:hover { background-color: rgba(255,51,102,0.3); }");
+    auto* closeBtn = createWindowButton(":/icon/close.png",
+        "QPushButton:hover { background-color: rgba(255,51,102,0.3); }", titleBar);
     connect(closeBtn, &QPushButton::clicked, this, &QMainWindow::close);
     titleLayout->addWidget(closeBtn);
+    return titleBar;
+}
 
-    rootLayout->addWidget(titleBar);
-
-    // === 主体区域 ===
+QHBoxLayout* MainWindow::createBodyLayout(QWidget* parent) {
     auto* bodyLayout = new QHBoxLayout;
     bodyLayout->setContentsMargins(10, 0, 10, 10);
     bodyLayout->setSpacing(10);
 
-    // 左侧控制面板
-    m_controlPanel = new ControlPanel(central);
+    m_controlPanel = new ControlPanel(parent);
     bodyLayout->addWidget(m_controlPanel);
 
-    // 中央区域
     auto* centerLayout = new QVBoxLayout;
     centerLayout->setSpacing(8);
 
-    m_cpuWidget = new CpuWidget(central);
-    centerLayout->addWidget(m_cpuWidget);
-
-    m_readyQueue = new ReadyQueueWidget(central);
-    centerLayout->addWidget(m_readyQueue);
-
-    // 甘特图放在ScrollArea中
-    m_ganttScroll = new QScrollArea(central);
+    m_cpuWidget = new CpuWidget(parent);
+    m_readyQueue = new ReadyQueueWidget(parent);
+    m_ganttScroll = new QScrollArea(parent);
+    m_ganttWidget = new GanttWidget;
     m_ganttScroll->setWidgetResizable(true);
     m_ganttScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_ganttScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_ganttScroll->setStyleSheet("QScrollArea { background: transparent; border: none; }");
-    m_ganttWidget = new GanttWidget;
     m_ganttScroll->setWidget(m_ganttWidget);
-    centerLayout->addWidget(m_ganttScroll, 1);
 
+    centerLayout->addWidget(m_cpuWidget);
+    centerLayout->addWidget(m_readyQueue);
+    centerLayout->addWidget(m_ganttScroll, 1);
     bodyLayout->addLayout(centerLayout, 1);
 
-    // 右侧统计面板
-    m_statsPanel = new StatsPanel(central);
+    m_statsPanel = new StatsPanel(parent);
     bodyLayout->addWidget(m_statsPanel);
+    return bodyLayout;
+}
 
-    rootLayout->addLayout(bodyLayout, 1);
+QHBoxLayout* MainWindow::createBottomLayout(QWidget* parent) {
+    m_explanationBar = new ExplanationBar(parent);
 
-    // === 底部解释栏 ===
-    m_explanationBar = new ExplanationBar(central);
     auto* bottomLayout = new QHBoxLayout;
     bottomLayout->setContentsMargins(10, 0, 10, 10);
     bottomLayout->addWidget(m_explanationBar);
-    rootLayout->addLayout(bottomLayout);
+    return bottomLayout;
 }
 
 void MainWindow::connectSignals() {
@@ -266,25 +266,7 @@ void MainWindow::onAlgorithmChanged(Algorithm algo) {
     if(m_scheduler->getTick() == 0) {
         m_scheduler->setStrategy(algo);
         m_statsPanel->updateStats(m_scheduler.get());
-        // 重新排列就绪队列
-        // 取出所有进程重新插入
-        std::vector<Process*> procs;
-        while(!m_scheduler->getReadyList().empty()) {
-            Process* p = m_scheduler->getReadyList().front();
-            m_scheduler->getReadyList().pop_front();
-            procs.push_back(p);
-        }
-        // 清空allProcesses中的指针（addProcess会重新添加）
-        // 注意：这里需要小心内存管理
-        m_scheduler->reset();
-        m_existNames.clear();
-        for(auto* p : procs) {
-            Process* newP = new Process(p->getName(), p->getOriginalPriority(), p->getNTime());
-            newP->setColor(p->getColor());
-            m_scheduler->addProcess(newP);
-            m_existNames.insert(QString::fromStdString(p->getName()));
-            delete p;
-        }
+        rebuildProcessesForAlgorithmChange();
         m_readyQueue->refreshAll(m_scheduler->getReadyList());
         m_controlPanel->setControlsEnabled(!m_scheduler->getReadyList().empty());
     }
@@ -296,59 +278,77 @@ void MainWindow::onSpeedChanged(int ms) {
     }
 }
 
-void MainWindow::executeStep() {
-    if(m_scheduler->getReadyList().empty() && !m_scheduler->getCurrentProcess()) {
-        // 执行完毕
-        m_timer->stop();
-        m_autoRunning = false;
-        m_cpuWidget->clearProcess();
-        m_controlPanel->setAutoRunning(false);
-        m_controlPanel->setRunning(false);
-        m_controlPanel->setControlsEnabled(false);
-        m_explanationBar->setText(QString::fromUtf8("所有进程执行完毕！"));
-        return;
-    }
+bool MainWindow::isExecutionComplete() const {
+    return m_scheduler->getReadyList().empty() && !m_scheduler->getCurrentProcess();
+}
 
-    m_controlPanel->setRunning(true);
+void MainWindow::handleExecutionComplete() {
+    m_timer->stop();
+    m_autoRunning = false;
+    m_cpuWidget->clearProcess();
+    m_controlPanel->setAutoRunning(false);
+    m_controlPanel->setRunning(false);
+    m_controlPanel->setControlsEnabled(false);
+    m_explanationBar->setText(QString::fromUtf8("所有进程执行完毕！"));
+}
 
-    StepResult result = m_scheduler->stepRun();
-
-    // 更新CPU显示
+void MainWindow::updateExecutionViews(const StepResult& result) {
     if(result.process) {
         m_cpuWidget->setProcess(result.process);
     } else {
         m_cpuWidget->clearProcess();
     }
+
     m_cpuWidget->setTick(m_scheduler->getTick());
-
-    // 更新就绪队列
     m_readyQueue->refreshAll(m_scheduler->getReadyList());
-
-    // 更新甘特图
     m_ganttWidget->setGanttData(m_scheduler->getGanttData(), m_scheduler->getTick());
-    // 自动滚动到右侧
+    m_statsPanel->updateStats(m_scheduler.get());
+    m_explanationBar->setText(result.explanation);
+
     if(m_ganttScroll->horizontalScrollBar()) {
         m_ganttScroll->horizontalScrollBar()->setValue(
             m_ganttScroll->horizontalScrollBar()->maximum());
     }
+}
 
-    // 更新统计
-    m_statsPanel->updateStats(m_scheduler.get());
+void MainWindow::updateStepControls() {
+    if(m_autoRunning) return;
 
-    // 更新解释
-    m_explanationBar->setText(result.explanation);
-
-    // 检查是否全部完成
-    if(m_scheduler->getReadyList().empty() && !m_scheduler->getCurrentProcess()) {
-        if(!m_autoRunning) {
-            m_controlPanel->setRunning(false);
-            m_controlPanel->setControlsEnabled(false);
-        }
-    } else {
-        if(!m_autoRunning) {
-            m_controlPanel->setRunning(false);
-        }
+    m_controlPanel->setRunning(false);
+    if(isExecutionComplete()) {
+        m_controlPanel->setControlsEnabled(false);
     }
+}
+
+void MainWindow::rebuildProcessesForAlgorithmChange() {
+    std::vector<Process*> procs;
+    while(!m_scheduler->getReadyList().empty()) {
+        Process* p = m_scheduler->getReadyList().front();
+        m_scheduler->getReadyList().pop_front();
+        procs.push_back(p);
+    }
+
+    m_scheduler->reset();
+    m_existNames.clear();
+    for(auto* p : procs) {
+        Process* newP = new Process(p->getName(), p->getOriginalPriority(), p->getNTime());
+        newP->setColor(p->getColor());
+        m_scheduler->addProcess(newP);
+        m_existNames.insert(QString::fromStdString(p->getName()));
+        delete p;
+    }
+}
+
+void MainWindow::executeStep() {
+    if(isExecutionComplete()) {
+        handleExecutionComplete();
+        return;
+    }
+
+    m_controlPanel->setRunning(true);
+    const StepResult result = m_scheduler->stepRun();
+    updateExecutionViews(result);
+    updateStepControls();
 }
 
 void MainWindow::refreshUI() {
