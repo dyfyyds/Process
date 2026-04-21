@@ -1,0 +1,61 @@
+name: Qt CI
+
+on:
+  push:
+    # Remote CI branch is `ai`; local work is pushed with `git push origin main:ai`.
+    branches: [ai]
+  pull_request:
+    branches: [ai]
+  workflow_dispatch:
+
+jobs:
+  build-and-smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Explicitly follow the ref that triggered this workflow.
+          ref: ${{ github.ref }}
+
+      - name: Install Qt and build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            qtbase5-dev \
+            xvfb
+
+      - name: Configure project
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build project
+        run: cmake --build build --parallel
+
+      - name: Run CTest if available
+        shell: bash
+        run: |
+          if ctest --test-dir build -N | grep -q "Total Tests: 0"; then
+            echo "No CTest tests are defined in this repository."
+          else
+            ctest --test-dir build --output-on-failure
+          fi
+
+      - name: Smoke test application startup
+        shell: bash
+        run: |
+          set +e
+          timeout 5s xvfb-run -a ./build/Process
+          status=$?
+          set -e
+
+          if [ "$status" -eq 0 ] || [ "$status" -eq 124 ]; then
+            echo "Application started successfully."
+            exit 0
+          fi
+
+          echo "Application exited unexpectedly with status $status"
+          exit "$status"
