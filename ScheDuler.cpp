@@ -57,6 +57,10 @@ Scheduler::~Scheduler() {
         delete node->data;
         node = node->next;
     }
+
+    if(m_currentProcess) {
+        delete m_currentProcess;
+    }
 }
 
 /**
@@ -195,10 +199,11 @@ void Scheduler::incrementReadyWaitTimes() {
 
 void Scheduler::executeSelectedProcess(Process* p, StepResult& result) {
     p->setStartTime(m_tick);
-    p->setRunning();
+    if(p->getState() != 'R') {
+        p->setRunning();
+    }
     p->execute();
     m_strategy->onExecuted(p);
-    p->updateState();
     m_remainingSlice--;
     m_tick++;
     m_busyTicks++;
@@ -223,7 +228,8 @@ void Scheduler::updateGanttData(Process* p) {
 }
 
 void Scheduler::finalizeStepResult(Process* p, StepResult& result) {
-    if(p->isFinish()) {
+    if(p->getRemainingTime() <= 0) {
+        p->setFinished();
         p->setFinishTime(m_tick);
         m_finishedList.push_back(p);
         result.justFinished = true;
@@ -234,9 +240,11 @@ void Scheduler::finalizeStepResult(Process* p, StepResult& result) {
     }
 
     if(m_remainingSlice <= 0) {
+        p->setReady();
         result.reinsertIndex = m_strategy->reinsert(m_readyQueue, p);
         result.justFinished = false;
         m_currentProcess = nullptr;
+        m_remainingSlice = 0;
         return;
     }
 
@@ -289,6 +297,11 @@ void Scheduler::reset() {
     for(auto* p : m_finishedList) delete p;
     m_finishedList.clear();
 
+    if(m_currentProcess) {
+        delete m_currentProcess;
+        m_currentProcess = nullptr;
+    }
+
     // 清理其他容器
     m_allProcesses.clear();
     m_ganttData.clear();
@@ -297,7 +310,6 @@ void Scheduler::reset() {
     m_tick = 0;
     m_busyTicks = 0;
     m_remainingSlice = 0;
-    m_currentProcess = nullptr;
 
     // 重建策略（保持当前算法）
     setStrategy(m_currentAlgo);

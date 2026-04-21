@@ -62,6 +62,7 @@ public:
      * 调用此方法后组件会更新显示并触发动画效果
      */
     void setProcess(Process* p);
+    void setStatusText(const QString& statusText);
 
     /**
      * @brief 清除当前运行的进程信息
@@ -109,6 +110,7 @@ protected:
 
 private:
     Process* m_process = nullptr;           // 当前运行的进程指针
+    QString m_statusText = QString::fromUtf8("运行中");
     int m_tick = 0;                         // CPU时钟周期计数
     qreal m_scanLinePos = 0.0;              // 扫描线当前位置
     qreal m_glowIntensity = 0.5;            // 发光强度

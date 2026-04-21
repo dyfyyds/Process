@@ -26,6 +26,16 @@ bool Process::setRunning(){
     return false;
 }
 
+void Process::setReady() {
+    if(this->m_rtime < this->m_ntime) {
+        this->m_state = 'W';
+    }
+}
+
+void Process::setFinished() {
+    this->m_state = 'F';
+}
+
 bool Process::isFinish() const{
     return this->m_state == 'F';
 }
@@ -38,9 +48,9 @@ void Process::execute(){
 
 void Process::updateState(){
     if(this->m_rtime < this->m_ntime)
-        this->m_state = 'W';
+        setReady();
     else
-        this->m_state = 'F';
+        setFinished();
 }
 
 void Process::decreasePriority(){

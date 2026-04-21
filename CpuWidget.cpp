@@ -50,8 +50,14 @@ void CpuWidget::setProcess(Process* p) {
     update();
 }
 
+void CpuWidget::setStatusText(const QString& statusText) {
+    m_statusText = statusText;
+    update();
+}
+
 void CpuWidget::clearProcess() {
     m_process = nullptr;
+    m_statusText = QString::fromUtf8("运行中");
     update();
 }
 
@@ -236,7 +242,7 @@ void CpuWidget::drawProcessInfo(QPainter& p, const QRect& area) {
     p.setFont(QFont("Consolas", 12));
     p.setPen(QColor(Cyber::TEXT));
     p.drawText(20, centerY + 10, QString::fromUtf8("优先级: %1").arg(m_process->getPriority()));
-    p.drawText(20, centerY + 30, QString::fromUtf8("状态: 运行中"));
+    p.drawText(20, centerY + 30, QString::fromUtf8("状态: %1").arg(m_statusText));
 
     drawProgressBar(p, area, procColor);
 }

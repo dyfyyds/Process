@@ -277,6 +277,8 @@ public:
      * @see updateState()
      */
     bool setRunning();
+    void setReady();
+    void setFinished();
 
     /**
      * @brief 检查进程是否已完成

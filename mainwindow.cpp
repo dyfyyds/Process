@@ -219,7 +219,7 @@ void MainWindow::onSingleStep() {
 
 void MainWindow::onAutoRun() {
     if(!m_autoRunning) {
-        if(m_scheduler->getReadyList().empty() && !m_scheduler->getCurrentProcess()) return;
+        if(isExecutionComplete()) return;
         m_autoRunning = true;
         m_timer->start(m_controlPanel->speedMs());
         m_controlPanel->setAutoRunning(true);
@@ -293,8 +293,18 @@ void MainWindow::handleExecutionComplete() {
 }
 
 void MainWindow::updateExecutionViews(const StepResult& result) {
-    if(result.process) {
+    if(m_scheduler->getCurrentProcess()) {
+        m_cpuWidget->setProcess(m_scheduler->getCurrentProcess());
+        m_cpuWidget->setStatusText(QString::fromUtf8("运行中"));
+    } else if(result.process) {
         m_cpuWidget->setProcess(result.process);
+        if(result.justFinished) {
+            m_cpuWidget->setStatusText(QString::fromUtf8("刚执行完成"));
+        } else if(result.reinsertIndex >= 0) {
+            m_cpuWidget->setStatusText(QString::fromUtf8("已回就绪队列"));
+        } else {
+            m_cpuWidget->setStatusText(QString::fromUtf8("本步执行完成"));
+        }
     } else {
         m_cpuWidget->clearProcess();
     }
